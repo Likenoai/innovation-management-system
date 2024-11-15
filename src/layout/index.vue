@@ -1,10 +1,10 @@
 <script setup>
-import { ref, computed, h } from 'vue';
+import { ref, computed, h, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { menuConfig } from '../config/menu';
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue';
-
+import { ArrowLeft, ArrowRight, Trophy } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 const router = useRouter();
 const route = useRoute();
 const isCollapse = ref(false);
@@ -57,7 +57,7 @@ const filterMenus = (menus) => {
 	});
 };
 
-const authorizedMenus = computed(() => filterMenus(menuConfig));
+const authorizedMenus = ref(filterMenus(menuConfig));
 
 // 获取当前激活的菜单
 const activeMenu = computed(() => route.path);
@@ -74,6 +74,53 @@ const renderIcon = (iconName) => {
 	return iconName ? h(ElementPlusIcons[iconName]) : null;
 };
 
+// 角色切换详情对话框
+import { rolePermissions } from '../config/permissions';
+const roleSwitchDialogVisible = ref(false);
+const selectedRole = ref('student');
+const roleData = [
+	{
+		label: '学生',
+		value: 'student',
+	},
+	{
+		label: '教师',
+		value: 'teacher',
+	},
+	{
+		label: '院级管理员',
+		value: 'college_admin',
+	},
+	{
+		label: '专家',
+		value: 'expert',
+	},
+	{
+		label: '校级管理员',
+		value: 'school_admin',
+	},
+];
+const roleLabelMap = {
+	student: '学生',
+	teacher: '教师',
+	college_admin: '院级管理员',
+	expert: '专家',
+	school_admin: '校级管理员',
+};
+
+// 监听 selectedRole 的变化
+watch(selectedRole, (newRole) => {
+	localStorage.setItem('userRole', newRole);
+	localStorage.setItem(
+		'permissions',
+		JSON.stringify(rolePermissions[newRole])
+	);
+	// 更新授权菜单
+	authorizedMenus.value = filterMenus(menuConfig);
+	ElMessage.success(`当前为：${roleLabelMap[newRole]}`);
+	roleSwitchDialogVisible.value = false;
+});
+
 const handleCommand = (command) => {
 	switch (command) {
 		case 'profile':
@@ -82,8 +129,38 @@ const handleCommand = (command) => {
 		case 'logout':
 			handleLogout();
 			break;
+		case 'roleSwitch':
+			roleSwitchDialogVisible.value = true;
+			break;
 	}
 };
+
+// 添加计算属性判断是否为首页
+const isHomePage = computed(() => route.path === '/home' || route.path === '/');
+
+// 添加鼠标移动事件监听
+const handleMouseMove = (event) => {
+	const asideElement = document.querySelector('.aside');
+	const toggleButtonElement = document.querySelector('.toggle-button');
+
+	if (asideElement && toggleButtonElement) {
+		const rect = asideElement.getBoundingClientRect();
+		// 检查鼠标是否在aside的右侧60px范围内
+		if (event.clientX <= rect.right + 60) {
+			toggleButtonElement.style.opacity = '1';
+		} else {
+			toggleButtonElement.style.opacity = '0';
+		}
+	}
+};
+
+onMounted(() => {
+	window.addEventListener('mousemove', handleMouseMove);
+});
+
+onBeforeUnmount(() => {
+	window.removeEventListener('mousemove', handleMouseMove);
+});
 </script>
 
 <template>
@@ -113,7 +190,7 @@ const handleCommand = (command) => {
 					<el-sub-menu v-if="menu.children" :index="menu.path">
 						<template #title>
 							<el-icon v-if="menu.icon">
-								<component :is="menu.icon" />
+								<component :is="ElementPlusIcons[menu.icon]" />
 							</el-icon>
 							<span>{{ menu.title }}</span>
 						</template>
@@ -134,7 +211,7 @@ const handleCommand = (command) => {
 						@click="handleMenuClick(menu.path)"
 					>
 						<el-icon v-if="menu.icon">
-							<component :is="menu.icon" />
+							<component :is="ElementPlusIcons[menu.icon]" />
 						</el-icon>
 						<template #title>{{ menu.title }}</template>
 					</el-menu-item>
@@ -174,16 +251,37 @@ const handleCommand = (command) => {
 								<el-dropdown-item command="logout"
 									>退出登录</el-dropdown-item
 								>
+								<el-dropdown-item command="roleSwitch"
+									>角色切换</el-dropdown-item
+								>
 							</el-dropdown-menu>
 						</template>
 					</el-dropdown>
 				</div>
 			</el-header>
 
-			<el-main>
+			<el-main :class="{ 'no-padding-top': isHomePage }">
 				<router-view></router-view>
 			</el-main>
 		</el-container>
+		<!-- 角色切换对话框 -->
+		<el-dialog
+			v-model="roleSwitchDialogVisible"
+			title="角色切换"
+			width="30%"
+			center
+		>
+			<el-radio-group v-model="selectedRole">
+				<template
+					v-for="(roleValue, roleKey) in roleLabelMap"
+					:key="roleKey"
+				>
+					<el-radio-button :label="roleKey">
+						{{ roleValue }}
+					</el-radio-button>
+				</template>
+			</el-radio-group>
+		</el-dialog>
 	</el-container>
 </template>
 <style scoped lang="less">
@@ -234,16 +332,16 @@ const handleCommand = (command) => {
 	align-items: center;
 	height: 60px;
 	padding: 0 20px;
-	position: fixed;
-	top: 0;
-	right: 0;
-	left: 200px;
+	// position: fixed;
+	// top: 0;
+	// right: 0;
+	// left: 200px;
 	z-index: 999;
 	// 调整为更亮的背景色
 	background: linear-gradient(
 		135deg,
-		rgba(65, 65, 95, 0.95) 0%,
-		rgba(55, 65, 95, 0.95) 100%
+		rgb(65, 65, 95) 0%,
+		rgba(55, 65, 95) 100%
 	);
 	backdrop-filter: blur(8px);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
@@ -294,9 +392,10 @@ const handleCommand = (command) => {
 }
 
 .el-main {
-	padding: 0 0 0 0 !important;
+	padding: 0 0 0 0;
 	background-color: #f0f2f5;
-	min-height: 100vh;
+	min-height: calc(100vh - 60px);
+	overflow: scroll-y;
 }
 
 .project-title {
@@ -342,6 +441,7 @@ const handleCommand = (command) => {
 	cursor: pointer;
 	z-index: 1001;
 	transition: all 0.3s ease;
+	opacity: 0; // 初始状态为透明
 
 	&:hover {
 		background: linear-gradient(

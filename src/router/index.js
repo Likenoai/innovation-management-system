@@ -31,6 +31,16 @@ const routes = [
 				},
 			},
 			{
+				path: 'competitions/my-competitions',
+				name: 'MyCompetitions',
+				component: () =>
+					import('../views/competitions/MyCompetitions.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_my_competitions',
+				},
+			},
+			{
 				path: 'innovation',
 				name: 'Innovation',
 				component: () => import('../views/innovation/index.vue'),
@@ -47,6 +57,11 @@ const routes = [
 					requiresAuth: true,
 					permission: 'view_project_library',
 				},
+			},
+			{
+				path: 'users-manage',
+				name: 'UsersManage',
+				component: () => import('../views/usersMag/usersMessage.vue'),
 			},
 		],
 	},

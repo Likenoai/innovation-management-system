@@ -1,47 +1,3 @@
-<template>
-	<div class="login-container">
-		<!-- 3D背景容器 -->
-		<div id="bg-animation"></div>
-
-		<div class="login-content">
-			<h1 class="glitch-text">竞赛管理系统</h1>
-
-			<form @submit.prevent="handleLogin" class="login-form">
-				<div class="form-group">
-					<label for="username">用户名</label>
-					<input
-						type="text"
-						id="username"
-						v-model="username"
-						required
-						@focus="handleFocus"
-						@blur="handleBlur"
-					/>
-					<div class="input-line"></div>
-				</div>
-
-				<div class="form-group">
-					<label for="password">密码</label>
-					<input
-						type="password"
-						id="password"
-						v-model="password"
-						required
-						@focus="handleFocus"
-						@blur="handleBlur"
-					/>
-					<div class="input-line"></div>
-				</div>
-
-				<button type="submit" class="login-button">
-					<span class="button-text">登录</span>
-					<div class="button-effect"></div>
-				</button>
-			</form>
-		</div>
-	</div>
-</template>
-
 <script setup>
 import axios from 'axios';
 import { ref, onMounted } from 'vue';
@@ -56,13 +12,10 @@ const router = useRouter();
 
 async function handleLogin() {
 	try {
-		const response = await axios.post(
-			'http://127.0.0.1:4523/m1/5366142-0-default/api/login',
-			{
-				username: username.value,
-				password: password.value,
-			}
-		);
+		const response = await axios.post('/api/login', {
+			username: username.value,
+			password: password.value,
+		});
 
 		if (response.data.token) {
 			localStorage.setItem('token', response.data.token);
@@ -120,35 +73,52 @@ function initThreeBackground() {
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	document.getElementById('bg-animation').appendChild(renderer.domElement);
 
-	// 创建粒子系统
-	const geometry = new THREE.BufferGeometry();
-	const vertices = [];
+	// 减少气泡数量
+	const bubbles = [];
+	const bubbleCount = 30; // 从50减少到30
 
-	for (let i = 0; i < 5000; i++) {
-		vertices.push(
-			THREE.MathUtils.randFloatSpread(2000),
-			THREE.MathUtils.randFloatSpread(2000),
-			THREE.MathUtils.randFloatSpread(2000)
+	for (let i = 0; i < bubbleCount; i++) {
+		const geometry = new THREE.SphereGeometry(
+			Math.random() * 1.5 + 0.5,
+			32,
+			32
+		); // 减小气泡大小
+		const material = new THREE.MeshBasicMaterial({
+			color: new THREE.Color(
+				`hsl(${200 + Math.random() * 40}, 90%, 85%)`
+			),
+			transparent: true,
+			opacity: 0.4, // 降低气泡不透明度
+		});
+
+		const bubble = new THREE.Mesh(geometry, material);
+		bubble.position.set(
+			Math.random() * 1200 - 600,
+			Math.random() * 1200 - 600,
+			Math.random() * 1200 - 600
 		);
+
+		bubble.userData = {
+			floatSpeed: Math.random() * 0.3 + 0.2, // 降低浮动速度
+			rotateSpeed: Math.random() * 0.01,
+			yOffset: Math.random() * Math.PI * 2,
+		};
+
+		bubbles.push(bubble);
+		scene.add(bubble);
 	}
 
-	geometry.setAttribute(
-		'position',
-		new THREE.Float32BufferAttribute(vertices, 3)
-	);
-
-	const particles = new THREE.Points(
-		geometry,
-		new THREE.PointsMaterial({ color: 0x00bfff, size: 2 })
-	);
-
-	scene.add(particles);
 	camera.position.z = 500;
 
 	function animate() {
 		requestAnimationFrame(animate);
-		particles.rotation.x += 0.0001;
-		particles.rotation.y += 0.0001;
+		bubbles.forEach((bubble) => {
+			bubble.position.y += bubble.userData.floatSpeed;
+			bubble.rotation.y += bubble.userData.rotateSpeed;
+			if (bubble.position.y > 1000) {
+				bubble.position.y = -1000;
+			}
+		});
 		renderer.render(scene, camera);
 	}
 
@@ -156,12 +126,67 @@ function initThreeBackground() {
 }
 </script>
 
+<template>
+	<div class="login-container">
+		<!-- 3D背景容器 -->
+		<div id="bg-animation"></div>
+
+		<div class="bg-decoration">
+			<div class="circle circle-1"></div>
+			<div class="circle circle-2"></div>
+			<div class="circle circle-3"></div>
+			<div class="wave"></div>
+		</div>
+
+		<div class="login-content">
+			<div class="title-container">
+				<h1 class="title">竞赛管理系统</h1>
+				<div class="title-decoration"></div>
+			</div>
+
+			<form @submit.prevent="handleLogin" class="login-form">
+				<div class="form-group">
+					<label for="username">用户名</label>
+					<input
+						type="text"
+						id="username"
+						v-model="username"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group">
+					<label for="password">密码</label>
+					<input
+						type="password"
+						id="password"
+						v-model="password"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<button type="submit" class="login-button">
+					<span class="button-text">登录</span>
+					<div class="button-effect"></div>
+				</button>
+			</form>
+		</div>
+	</div>
+</template>
+
 <style scoped>
 .login-container {
+	color: #1a85ef;
 	position: relative;
 	min-height: 100vh;
+	background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
 	overflow: hidden;
-	background: #000;
 }
 
 #bg-animation {
@@ -184,22 +209,65 @@ function initThreeBackground() {
 	padding: 20px;
 }
 
-.glitch-text {
-	font-size: 3rem;
-	color: #fff;
-	text-shadow: 0 0 10px rgba(0, 191, 255, 0.8);
-	margin-bottom: 2rem;
-	animation: glitch 1s infinite;
+.title-container {
+	text-align: center;
+	margin-bottom: 2.5rem;
+}
+
+.title {
+	font-size: 2.5rem;
+	color: #1a85ef;
+	font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+	font-weight: 600;
+	letter-spacing: 2px;
+	margin-bottom: 0.5rem;
+	position: relative;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.title-decoration {
+	width: 60px;
+	height: 3px;
+	background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+	margin: 0 auto;
+	border-radius: 3px;
+	position: relative;
+}
+
+.title-decoration::before,
+.title-decoration::after {
+	content: '';
+	position: absolute;
+	width: 40px;
+	height: 3px;
+	background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+	border-radius: 3px;
+	opacity: 0.6;
+}
+
+.title-decoration::before {
+	left: -50px;
+}
+
+.title-decoration::after {
+	right: -50px;
 }
 
 .login-form {
-	background: rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.85);
 	backdrop-filter: blur(10px);
 	padding: 2rem;
-	border-radius: 15px;
+	border-radius: 20px;
 	width: 320px;
-	border: 1px solid rgba(255, 255, 255, 0.2);
-	box-shadow: 0 0 20px rgba(0, 191, 255, 0.2);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	position: relative;
+	z-index: 3;
+}
+
+.login-form:hover {
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
@@ -208,7 +276,6 @@ function initThreeBackground() {
 }
 
 label {
-	color: #fff;
 	font-size: 0.9rem;
 	margin-bottom: 0.5rem;
 	display: block;
@@ -217,10 +284,9 @@ label {
 input {
 	width: 100%;
 	padding: 0.75rem;
-	background: rgba(255, 255, 255, 0.1);
-	border: none;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid rgba(79, 172, 254, 0.2);
 	border-radius: 5px;
-	color: #fff;
 	font-size: 1rem;
 	transition: all 0.3s ease;
 }
@@ -268,49 +334,92 @@ input {
 	transform: scale(1.1);
 }
 
-@keyframes glitch {
-	0% {
-		text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75),
-			-0.05em -0.025em 0 rgba(0, 191, 255, 0.75),
-			-0.025em 0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	14% {
-		text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75),
-			-0.05em -0.025em 0 rgba(0, 191, 255, 0.75),
-			-0.025em 0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	15% {
-		text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
-			0.025em 0.025em 0 rgba(0, 191, 255, 0.75),
-			-0.05em -0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	49% {
-		text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75),
-			0.025em 0.025em 0 rgba(0, 191, 255, 0.75),
-			-0.05em -0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	50% {
-		text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
-			0.05em 0 0 rgba(0, 191, 255, 0.75),
-			0 -0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	99% {
-		text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75),
-			0.05em 0 0 rgba(0, 191, 255, 0.75),
-			0 -0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-	100% {
-		text-shadow: -0.025em 0 0 rgba(255, 0, 0, 0.75),
-			-0.025em -0.025em 0 rgba(0, 191, 255, 0.75),
-			-0.025em -0.05em 0 rgba(0, 128, 255, 0.75);
-	}
-}
-
 input:focus {
-	box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
+	background: #ffffff;
+	border-color: #4facfe;
+	box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
 }
 
 .login-button:hover {
 	box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+}
+
+/* 添加背景装饰元素样式 */
+.bg-decoration {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+}
+
+.circle {
+	position: absolute;
+	border-radius: 50%;
+	opacity: 0.1;
+}
+
+.circle-1 {
+	width: 300px;
+	height: 300px;
+	background: linear-gradient(45deg, #4facfe, #00f2fe);
+	top: -100px;
+	right: -100px;
+}
+
+.circle-2 {
+	width: 200px;
+	height: 200px;
+	background: linear-gradient(45deg, #00f2fe, #4facfe);
+	bottom: 10%;
+	left: -50px;
+}
+
+.circle-3 {
+	width: 150px;
+	height: 150px;
+	background: linear-gradient(45deg, #4facfe, #00f2fe);
+	top: 30%;
+	right: 15%;
+}
+
+.wave {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 100px;
+	background: url('@/assets/images/wave.svg') repeat-x;
+	background-size: 1000px 100px;
+	opacity: 0.1;
+	animation: wave 20s linear infinite;
+}
+
+@keyframes wave {
+	0% {
+		background-position-x: 0;
+	}
+	100% {
+		background-position-x: 1000px;
+	}
+}
+
+/* 添加响应式调整 */
+@media (max-width: 768px) {
+	.circle-1 {
+		width: 200px;
+		height: 200px;
+	}
+
+	.circle-2 {
+		width: 150px;
+		height: 150px;
+	}
+
+	.circle-3 {
+		width: 100px;
+		height: 100px;
+	}
 }
 </style>
