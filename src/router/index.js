@@ -76,8 +76,11 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
 	const loginStore = useLoginStore();
-	const token = localStorage.getItem('token');
+	const token = loginStore.token;
 	const permissions = loginStore.permissions;
+
+	console.log('router token:', token);
+	console.log('loginStore.role:', loginStore.role);
 
 	if (to.path === '/login') {
 		if (token) {

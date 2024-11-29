@@ -3,7 +3,9 @@ import axios from 'axios';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { useLoginStore } from '@/stores/loginStore';
+import { useLoginStore } from '@/stores/loginStore.js';
+import { useTextStore } from '@/stores/textStore.js';
+import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { rolePermissions } from '@/config/permissions';
@@ -19,7 +21,18 @@ const registerData = ref({
 	role: '5', // 默认身份为学生
 });
 const router = useRouter();
-const loginStore = useLoginStore();
+const loginStore = useMyLoginStore();
+const myLoginStore = useMyLoginStore();
+const textStore = useTextStore();
+function setText() {
+	textStore.text = 'Hello, Pinia111111111111111111111!';
+	myLoginStore.token = '1234567890';
+	loginStore.token = '1234567890';
+}
+function initLoginStore() {
+	console.log('loginStore.token:', loginStore.token);
+	console.log('textStore.text:', textStore.text);
+}
 async function handleLogin() {
 	try {
 		const response = await axios.post('/scgl/CheckAndLogin/login', {
@@ -28,12 +41,6 @@ async function handleLogin() {
 		});
 
 		if (response.code === 200) {
-			localStorage.setItem('token', response.data.token);
-			console.log('response:', response);
-			// 将用户信息存储到 Pinia 仓库中
-			loginStore.token = response.data.token;
-			loginStore.userName = response.data.userName;
-			loginStore.id = response.data.id;
 			let roleMap = {
 				1: 'school_admin',
 				2: 'college_admin',
@@ -41,13 +48,18 @@ async function handleLogin() {
 				4: 'teacher',
 				5: 'student',
 			};
+			// localStorage.setItem('token', response.data.token);
+			// console.log('response:', response);
+			// 将用户信息存储到 Pinia 仓库中
+			loginStore.token = response.data.token;
+			// myLoginStore.token = response.data.token;
+			loginStore.userName = response.data.userName;
+			loginStore.id = response.data.id;
 			loginStore.role = roleMap[response.data.role];
-			console.log('loginStore.role:', loginStore.role);
 			loginStore.permissions = rolePermissions[loginStore.role];
-			console.log('loginStore.permissions:', loginStore.permissions);
+			textStore.text = 'Hello, 请求内容中!';
 			ElMessage.success('登录成功');
-
-			router.push('/');
+			// router.push('/');
 		} else {
 			ElMessage.error('登录失败');
 		}
@@ -194,6 +206,8 @@ function initThreeBackground() {
 			<div class="title-container">
 				<h1 class="title">竞赛管理系统</h1>
 				<div class="title-decoration"></div>
+				<button @click="initLoginStore">初始化登录状态</button>
+				<button @click="setText">设置text</button>
 			</div>
 
 			<!-- 登录表单 -->

@@ -1,6 +1,6 @@
 import { createPinia } from 'pinia';
-import persistedstate from 'pinia-plugin-persistedstate';
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 const pinia = createPinia();
-pinia.use(persistedstate);
+pinia.use(piniaPluginPersistedstate);
 
 export default pinia;

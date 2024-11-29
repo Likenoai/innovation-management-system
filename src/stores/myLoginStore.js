@@ -1,13 +1,12 @@
 import { defineStore } from 'pinia';
 import { watch } from 'vue';
-
-export const useLoginStore = defineStore('login', {
+export const useMyLoginStore = defineStore('myLogin', {
 	state: () => ({
 		token: '',
-		// userRole: '',
-		// permissions: [],
-		// userName: '',
-		// id: '',
+		userRole: '',
+		permissions: [],
+		userName: '',
+		id: '',
 	}),
 	persist: true,
 	actions: {
