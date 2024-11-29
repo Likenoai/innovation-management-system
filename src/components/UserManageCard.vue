@@ -52,7 +52,6 @@ watch(visibleRef, (newVal) => {
 .hide-flex {
 	height: 10px;
 	border: 10px solid #ffffff;
-	/* border-image: url('@/assets/images/open.svg') 10; */
 	flex: 0;
 }
 .user-manage-card {
@@ -60,14 +59,15 @@ watch(visibleRef, (newVal) => {
 	overflow: hidden;
 	transition: 0.3s ease;
 	position: relative;
-	/* border: none; */
-
 	.user-manage-card-title {
 		font-size: 18px;
 		font-weight: bold;
 		padding: 10px;
 		width: 100%;
 		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.close-button {
 		position: absolute;

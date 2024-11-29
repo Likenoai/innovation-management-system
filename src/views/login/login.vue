@@ -3,29 +3,50 @@ import axios from 'axios';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { useLoginStore } from '@/stores/loginStore';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { rolePermissions } from '@/config/permissions';
 
 const username = ref('');
 const password = ref('');
+const isLoginMode = ref(true);
+const registerData = ref({
+	username: '',
+	password: '',
+	confirmPassword: '',
+	name: '',
+	role: '5', // 默认身份为学生
+});
 const router = useRouter();
-
+const loginStore = useLoginStore();
 async function handleLogin() {
 	try {
-		const response = await axios.post('/api/login', {
+		const response = await axios.post('/scgl/CheckAndLogin/login', {
 			username: username.value,
 			password: password.value,
 		});
 
-		if (response.data.token) {
+		if (response.code === 200) {
 			localStorage.setItem('token', response.data.token);
-			localStorage.setItem('userRole', response.data.user.role);
-			localStorage.setItem(
-				'permissions',
-				JSON.stringify(response.data.user.permissions)
-			);
-			localStorage.setItem('username', response.data.user.username);
+			console.log('response:', response);
+			// 将用户信息存储到 Pinia 仓库中
+			loginStore.token = response.data.token;
+			loginStore.userName = response.data.userName;
+			loginStore.id = response.data.id;
+			let roleMap = {
+				1: 'school_admin',
+				2: 'college_admin',
+				3: 'expert',
+				4: 'teacher',
+				5: 'student',
+			};
+			loginStore.role = roleMap[response.data.role];
+			console.log('loginStore.role:', loginStore.role);
+			loginStore.permissions = rolePermissions[loginStore.role];
+			console.log('loginStore.permissions:', loginStore.permissions);
 			ElMessage.success('登录成功');
+
 			router.push('/');
 		} else {
 			ElMessage.error('登录失败');
@@ -34,6 +55,37 @@ async function handleLogin() {
 		console.error('登录错误:', error);
 		ElMessage.error('登录失败: ' + error.message);
 	}
+}
+
+async function handleRegister() {
+	if (registerData.value.password !== registerData.value.confirmPassword) {
+		ElMessage.error('两次输入的密码不一致');
+		return;
+	}
+
+	try {
+		const response = await axios.post('/scgl/CheckAndLogin/check', {
+			username: registerData.value.username,
+			password: registerData.value.password,
+			name: registerData.value.name,
+			role: registerData.value.role,
+		});
+
+		if (response.code === 200) {
+			ElMessage.success('注册成功');
+			isLoginMode.value = true;
+			router.push('/login');
+		} else {
+			ElMessage.error('注册失败');
+		}
+	} catch (error) {
+		console.error('注册错误:', error);
+		ElMessage.error('注册失败: ' + error.message);
+	}
+}
+
+function toggleMode() {
+	isLoginMode.value = !isLoginMode.value;
 }
 
 // 添加新的交互方法
@@ -144,7 +196,12 @@ function initThreeBackground() {
 				<div class="title-decoration"></div>
 			</div>
 
-			<form @submit.prevent="handleLogin" class="login-form">
+			<!-- 登录表单 -->
+			<form
+				v-if="isLoginMode"
+				@submit.prevent="handleLogin"
+				class="login-form"
+			>
 				<div class="form-group">
 					<label for="username">用户名</label>
 					<input
@@ -176,6 +233,80 @@ function initThreeBackground() {
 					<div class="button-effect"></div>
 				</button>
 			</form>
+
+			<!-- 注册表单 -->
+			<form v-else @submit.prevent="handleRegister" class="login-form">
+				<div class="form-group">
+					<label for="register-username">注册用户名</label>
+					<input
+						type="text"
+						id="register-username"
+						v-model="registerData.username"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group">
+					<label for="real-name">真实姓名</label>
+					<input
+						type="text"
+						id="real-name"
+						v-model="registerData.name"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group">
+					<label for="register-password">注册密码</label>
+					<input
+						type="password"
+						id="register-password"
+						v-model="registerData.password"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group">
+					<label for="confirm-password">确认密码</label>
+					<input
+						type="password"
+						id="confirm-password"
+						v-model="registerData.confirmPassword"
+						required
+						@focus="handleFocus"
+						@blur="handleBlur"
+					/>
+					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group">
+					<label>身份选择</label>
+					<el-radio-group v-model="registerData.role">
+						<el-radio label="5">学生</el-radio>
+						<el-radio label="4">教师</el-radio>
+					</el-radio-group>
+				</div>
+
+				<button type="submit" class="login-button">
+					<span class="button-text">注册</span>
+					<div class="button-effect"></div>
+				</button>
+			</form>
+
+			<!-- 切换按钮 -->
+			<button @click="toggleMode" class="toggle-button">
+				<span v-if="isLoginMode">没有账号？注册</span>
+				<span v-else>已有账号？登录</span>
+			</button>
 		</div>
 	</div>
 </template>
@@ -405,7 +536,7 @@ input:focus {
 	}
 }
 
-/* 添加响应式调整 */
+/* 加响应式调整 */
 @media (max-width: 768px) {
 	.circle-1 {
 		width: 200px;
@@ -421,5 +552,15 @@ input:focus {
 		width: 100px;
 		height: 100px;
 	}
+}
+
+.toggle-button {
+	margin-top: 1rem;
+	background: none;
+	border: none;
+	color: #1a85ef;
+	cursor: pointer;
+	font-size: 0.9rem;
+	text-decoration: underline;
 }
 </style>

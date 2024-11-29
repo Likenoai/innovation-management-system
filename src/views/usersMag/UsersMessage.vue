@@ -1,7 +1,13 @@
 <script setup>
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { useLoginStore } from '@/stores/loginStore';
+import UserManageCard from '@/components/UserManageCard.vue';
+import axios from 'axios';
+// 获取登录状态
+const loginStore = useLoginStore();
+
 // 生成专家模拟数据
 const expertList = [];
-
 for (let i = 1; i <= 20; i++) {
 	expertList.push({
 		id: i,
@@ -15,33 +21,70 @@ for (let i = 1; i <= 20; i++) {
 }
 
 const form = ref({
-	currentPassword: '',
+	oldPassword: '',
 	newPassword: '',
 	confirmPassword: '',
 });
+import { ElMessage } from 'element-plus';
+// 功能区
+async function updatePassword() {
+	if (form.value.newPassword !== form.value.confirmPassword) {
+		ElMessage.error('两次输入的密码不一致');
+		return;
+	}
+	if (
+		!form.value.oldPassword ||
+		!form.value.newPassword ||
+		!form.value.confirmPassword
+	) {
+		ElMessage.error('请填写完整密码信息');
+		return;
+	}
+	console.log('修改密码');
+	try {
+		const response = await axios.put('/scgl/Password/updatePassword', {
+			oldPassword: form.value.oldPassword,
+			password: form.value.newPassword,
+		});
+
+		if (response.code === 200) {
+			ElMessage.success('密码修改成功');
+			form.value.oldPassword = '';
+			form.value.newPassword = '';
+			form.value.confirmPassword = '';
+		} else {
+			ElMessage.error('密码修改失败');
+		}
+	} catch (error) {
+		console.error('密码修改错误:', error);
+		ElMessage.error('密码修改失败: ' + error.message);
+	}
+}
+function exportTeacher() {
+	console.log('导出教师信息');
+}
+
+function exportStudent() {
+	console.log('导出学生信息');
+}
 
 function addExpert() {
-	// 在这里添加处理逻辑，例如打开一个对话框或表单
 	console.log('添加专家账号');
 }
 
 function resetPassword(expert) {
-	// 在这里添加重置密码的逻辑
 	console.log(`重置密码: ${expert.name}`);
 }
 
 function deleteExpert(expert) {
-	// 在这里添加删除专家的逻辑
 	console.log(`删除专家: ${expert.name}`);
 }
-
-import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 const tableHeight = ref('650px');
 
 function updateTableHeight() {
 	const windowHeight = window.innerHeight;
-	tableHeight.value = `${windowHeight - 264}px`; // 264 是其他元素的高度
+	tableHeight.value = `${windowHeight - 264}px`;
 }
 
 onMounted(() => {
@@ -52,35 +95,51 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	window.removeEventListener('resize', updateTableHeight);
 });
-import UserManageCard from '@/components/UserManageCard.vue';
+
 const visibilityStates = {
 	expert: ref(true),
 	collegeAdmin: ref(true),
 	teacher: ref(true),
 	student: ref(true),
+	self: ref(true),
 };
-const expertCardVisible = ref(true);
+
 function toggleVisibility(type) {
 	if (visibilityStates[type] !== undefined) {
 		visibilityStates[type].value = !visibilityStates[type].value;
-		// expertCardVisible.value = true;
-		// console.log('expertCardVisible:', expertCardVisible.value);
 	}
 }
 
+// 检查用户是否有权限查看某个卡片
+function hasPermission(permission) {
+	return loginStore.permissions.includes(permission);
+}
+
+// 定义按钮类型
 const buttonTypes = [
-	{ label: '专家', type: 'expert' },
-	{ label: '学院管理员', type: 'collegeAdmin' },
-	{ label: '教师', type: 'teacher' },
-	{ label: '学生', type: 'student' },
+	{ label: '专家', type: 'expert', permission: 'view_expert_info' },
+	{
+		label: '学院管理员',
+		type: 'collegeAdmin',
+		permission: 'view_college_admin_info',
+	},
+	{ label: '教师', type: 'teacher', permission: 'view_teacher_info' },
+	{ label: '学生', type: 'student', permission: 'view_student_info' },
+	{ label: '当前用户', type: 'self', permission: 'view_self_info' },
 ];
+
+// 创建一个新的被过滤过的数组
+const filteredButtonTypes = computed(() => {
+	return buttonTypes.filter((button) => hasPermission(button.permission));
+});
 </script>
 
 <template>
 	<div class="users-manage-container">
 		<UserManageCard
-			title="专家账号管理"
-			:visible="visibilityStates.expert"
+			v-permission="'view_expert_info'"
+			title="专家信息管理"
+			:visible="visibilityStates.expert.value"
 			@update:visible="(value) => (visibilityStates.expert.value = value)"
 		>
 			<template #actions>
@@ -123,16 +182,18 @@ const buttonTypes = [
 					>
 						<template #default="scope">
 							<el-button
-								type="text"
+								type="primary"
 								size="small"
 								@click="resetPassword(scope.row)"
+								text
 							>
 								重置密码
 							</el-button>
 							<el-button
-								type="text"
+								type="primary"
 								size="small"
 								@click="deleteExpert(scope.row)"
+								text
 							>
 								删除
 							</el-button>
@@ -142,17 +203,14 @@ const buttonTypes = [
 			</template>
 		</UserManageCard>
 		<UserManageCard
-			title="学院管理员账号管理"
-			:visible="visibilityStates.collegeAdmin"
+			v-permission="'view_college_admin_info'"
+			title="学院管理员信息管理"
+			:visible="visibilityStates.collegeAdmin.value"
 			@update:visible="
 				(value) => (visibilityStates.collegeAdmin.value = value)
 			"
 		>
-			<template #actions>
-				<el-button type="primary" @click="addExpert" v-if="false"
-					>添加学院管理员</el-button
-				>
-			</template>
+			<template #actions> </template>
 			<template #table>
 				<el-table
 					:data="expertList"
@@ -188,9 +246,10 @@ const buttonTypes = [
 					>
 						<template #default="scope">
 							<el-button
-								type="text"
+								type="primary"
 								size="small"
 								@click="resetPassword(scope.row)"
+								text
 							>
 								重置密码
 							</el-button>
@@ -200,12 +259,18 @@ const buttonTypes = [
 			</template>
 		</UserManageCard>
 		<UserManageCard
-			title="教师账号管理"
-			:visible="visibilityStates.teacher"
+			v-permission="'view_teacher_info'"
+			title="教师信息管理"
+			:visible="visibilityStates.teacher.value"
 			@update:visible="
 				(value) => (visibilityStates.teacher.value = value)
 			"
 		>
+			<template #actions>
+				<el-button type="primary" @click="exportTeacher" plain
+					>教师信息导入</el-button
+				>
+			</template>
 			<template #table>
 				<el-table
 					:data="expertList"
@@ -241,9 +306,10 @@ const buttonTypes = [
 					>
 						<template #default="scope">
 							<el-button
-								type="text"
+								type="primary"
 								size="small"
 								@click="resetPassword(scope.row)"
+								text
 							>
 								重置密码
 							</el-button>
@@ -253,12 +319,18 @@ const buttonTypes = [
 			</template>
 		</UserManageCard>
 		<UserManageCard
-			title="学生账号管理"
-			:visible="visibilityStates.student"
+			v-permission="'view_student_info'"
+			title="学生信息管理"
+			:visible="visibilityStates.student.value"
 			@update:visible="
 				(value) => (visibilityStates.student.value = value)
 			"
 		>
+			<template #actions>
+				<el-button type="primary" @click="exportStudent" plain
+					>学生信息导入</el-button
+				>
+			</template>
 			<template #table>
 				<el-table
 					:data="expertList"
@@ -294,9 +366,10 @@ const buttonTypes = [
 					>
 						<template #default="scope">
 							<el-button
-								type="text"
+								type="primary"
 								size="small"
 								@click="resetPassword(scope.row)"
+								text
 							>
 								重置密码
 							</el-button>
@@ -306,7 +379,12 @@ const buttonTypes = [
 			</template>
 		</UserManageCard>
 
-		<UserManageCard title="当前用户密码管理">
+		<UserManageCard
+			v-permission="'view_self_info'"
+			title="当前用户密码管理"
+			:visible="visibilityStates.self.value"
+			@update:visible="(value) => (visibilityStates.self.value = value)"
+		>
 			<template #table>
 				<el-form
 					:model="form"
@@ -316,9 +394,9 @@ const buttonTypes = [
 					}"
 					class="user-content"
 				>
-					<el-form-item label="当前密码">
+					<el-form-item label="原来密码">
 						<el-input
-							v-model="form.currentPassword"
+							v-model="form.oldPassword"
 							type="password"
 							show-password
 							style="max-width: 300px"
@@ -350,7 +428,7 @@ const buttonTypes = [
 		</UserManageCard>
 		<div class="toolbar">
 			<el-button
-				v-for="button in buttonTypes"
+				v-for="button in filteredButtonTypes"
 				:key="button.type"
 				:type="visibilityStates[button.type].value ? 'success' : 'info'"
 				@click="toggleVisibility(button.type)"
@@ -374,7 +452,7 @@ const buttonTypes = [
 	width: 100%;
 	padding: 20px;
 	display: flex;
-	justify-content: start;
+	justify-content: end;
 	align-items: flex-start;
 	gap: 20px;
 }
@@ -383,6 +461,7 @@ const buttonTypes = [
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+
 	.el-button--primary {
 		background-color: #3b415f;
 		color: #ffffff;

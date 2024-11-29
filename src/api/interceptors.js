@@ -1,4 +1,24 @@
 import axios from 'axios';
+import pinia from '@/stores/index.js';
+
+import { useLoginStore } from '@/stores/loginStore';
+
+const loginStore = useLoginStore(pinia);
+
+// 设置请求拦截器
+axios.interceptors.request.use(
+	(config) => {
+		// 如果有 token，则将其添加到请求头中
+		const token = loginStore.token;
+		if (token) {
+			config.headers.token = `${token}`;
+		}
+		return config;
+	},
+	(error) => {
+		return Promise.reject(error);
+	}
+);
 
 // 添加响应拦截器
 axios.interceptors.response.use(

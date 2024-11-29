@@ -1,14 +1,25 @@
 <script setup>
-import { ref, computed, h, onMounted, onBeforeUnmount, watch } from 'vue';
+import {
+	ref,
+	computed,
+	h,
+	onMounted,
+	onBeforeUnmount,
+	watch,
+	getCurrentInstance,
+} from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { menuConfig } from '../config/menu';
 import { ArrowLeft, ArrowRight, Trophy } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { useLoginStore } from '@/stores/loginStore';
+import { CaretBottom, Management } from '@element-plus/icons-vue';
+
+const loginStore = useLoginStore();
 const router = useRouter();
 const route = useRoute();
 const isCollapse = ref(false);
-const username = ref(localStorage.getItem('username') || '用户');
+const username = ref(loginStore.userName || '用户');
 
 // 添加侧边栏显示状态控制
 const isAsideVisible = ref(true);
@@ -18,29 +29,22 @@ const toggleAside = () => {
 	isCollapse.value = !isAsideVisible.value; // 同步折叠状态
 };
 
-// 优化权限相关逻辑
-const getUserPermissions = () => {
+// 权限相关变量和函数
+const userPermissions = computed(() => {
 	try {
-		const permissions = localStorage.getItem('permissions');
-		return permissions ? JSON.parse(permissions) : [];
+		// console.log('loginStore.permissions:', loginStore);
+
+		const permissions = loginStore.permissions;
+		return permissions ? permissions : [];
 	} catch (error) {
 		console.error('权限解析错误:', error);
 		return [];
 	}
-};
+});
 
-const userPermissions = computed(getUserPermissions);
-
-// 优化登出逻辑
-const handleLogout = () => {
-	const keysToRemove = ['token', 'permissions', 'userRole', 'username'];
-	keysToRemove.forEach((key) => localStorage.removeItem(key));
-	router.push('/login');
-};
-
-// 过滤有权限的菜单
 const filterMenus = (menus) => {
-	return menus.filter((menu) => {
+	// console.log(userPermissions);
+	let tempMenus = menus.filter((menu) => {
 		if (
 			menu.permission &&
 			!userPermissions.value.includes(menu.permission)
@@ -55,9 +59,17 @@ const filterMenus = (menus) => {
 
 		return true;
 	});
+	return tempMenus;
 };
 
 const authorizedMenus = ref(filterMenus(menuConfig));
+
+// 优化登出逻辑
+const handleLogout = () => {
+	loginStore.logout();
+	localStorage.removeItem('token');
+	router.push('/login');
+};
 
 // 获取当前激活的菜单
 const activeMenu = computed(() => route.path);
@@ -75,7 +87,6 @@ const renderIcon = (iconName) => {
 };
 
 // 角色切换详情对话框
-import { rolePermissions } from '../config/permissions';
 const roleSwitchDialogVisible = ref(false);
 const selectedRole = ref('student');
 const roleData = [
@@ -107,20 +118,20 @@ const roleLabelMap = {
 	expert: '专家',
 	school_admin: '校级管理员',
 };
+import { rolePermissions } from '@/config/permissions';
 
-// 监听 selectedRole 的变化
+const { proxy } = getCurrentInstance();
+
 watch(selectedRole, (newRole) => {
-	localStorage.setItem('userRole', newRole);
-	localStorage.setItem(
-		'permissions',
-		JSON.stringify(rolePermissions[newRole])
-	);
-	// 更新授权菜单
+	// console.log('selectedRole:', newRole);
+	loginStore.userRole = newRole;
+	loginStore.permissions = rolePermissions[newRole];
 	authorizedMenus.value = filterMenus(menuConfig);
-	ElMessage.success(`当前为：${roleLabelMap[newRole]}`);
-	roleSwitchDialogVisible.value = false;
+	// 强制更新组件以确保 v-permissions 重新判断
+	proxy.$forceUpdate();
 });
 
+// 处理命令
 const handleCommand = (command) => {
 	switch (command) {
 		case 'profile':
@@ -156,6 +167,7 @@ const handleMouseMove = (event) => {
 
 onMounted(() => {
 	window.addEventListener('mousemove', handleMouseMove);
+	// console.log('mounted menuConfig:', menuConfig);
 });
 
 onBeforeUnmount(() => {

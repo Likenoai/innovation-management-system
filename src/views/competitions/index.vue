@@ -181,6 +181,7 @@ const descriptionItems = [
 	{ label: '证书扫描件', prop: '证书扫描件' },
 ];
 
+// 导出数据
 const exportData = [
 	{ value: '序号', desc: '序号' },
 	{ value: '竞赛名称', desc: '竞赛名称' },
@@ -452,17 +453,30 @@ const exportData = [
 
 		<!-- 导出弹窗 -->
 		<el-dialog v-model="exportDialogVisible" title="导出数据">
-			<el-transfer
-				v-model="exportColumns"
-				:data="exportData"
-				:titles="['可选列', '已选列']"
-				:props="{ key: 'value', label: 'desc' }"
-				target-order="push"
-				filterable
-				filter-placeholder="输入关键字进行过滤"
-				style="width: 100%"
-			/>
-			<el-button type="primary" @click="handleExport">确认导出</el-button>
+			<div
+				class="export-container"
+				style="display: flex; justify-content: center"
+			>
+				<el-transfer
+					v-model="exportColumns"
+					:data="exportData"
+					:titles="['可选列', '已选列']"
+					:props="{ key: 'value', label: 'desc' }"
+					target-order="push"
+					filterable
+					filter-placeholder="输入关键字进行过滤"
+				/>
+			</div>
+			<template #footer>
+				<div
+					class="footer-button"
+					style="display: flex; justify-content: center"
+				>
+					<el-button type="primary" @click="handleExport">
+						确认导出
+					</el-button>
+				</div>
+			</template>
 		</el-dialog>
 	</div>
 </template>

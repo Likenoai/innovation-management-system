@@ -17,41 +17,7 @@ const fetchCompetitions = async () => {
 
 onMounted(() => {
 	// 页面加载时获取数据
-	// fetchCompetitions();
-
-	// 模拟数据
-	myCompetitions.value = [
-		{
-			竞赛名称: '数学竞赛',
-			获奖项目名称: '最佳解题奖',
-			获奖等级: '一等奖',
-			参赛学生位次: '1',
-			学生姓名: '张三',
-			学号: '20210001',
-			学生所在学院: '数学学院',
-			学生专业: '应用数学',
-			学生年级: '大三',
-			'本/专': '本科',
-			竞赛级别: '国家级',
-			指导教师: '李老师',
-			人员代码: '001',
-			指导位次: '1',
-			指导教师所在学院: '数学学院',
-			'奖金金额（元）': '5000',
-			生效学年职称统计: '2021-2022',
-			证书时间: '2022-06-01',
-			证书颁发部门: '教育部',
-			是否证书等发: '是',
-			成绩公示文件: '成绩公示.pdf',
-			证书扫描件: '证书扫描件.pdf',
-			是否公示: '是',
-			status: '已完成',
-		},
-		// 可以添加更多的模拟数据对象
-	];
-	for (let i = 0; i < 20; i++) {
-		myCompetitions.value.push(myCompetitions.value[0]);
-	}
+	fetchCompetitions();
 });
 // 上传文件的处理函数
 const handleUpload = (file) => {
@@ -91,7 +57,7 @@ const headers = [
 	'证书扫描件',
 	'是否公示',
 ];
-myCompetitions;
+
 // 竞赛信息表单数据
 const competitionForm = ref({
 	证书时间: '', // 初始化证书时间
@@ -129,9 +95,75 @@ const uploadFiles = (field) => {
 
 <template>
 	<div class="my-competitions-container">
-		<h2 v-permission="'view_competitions'" class="view-competitions">
-			我的竞赛
-		</h2>
+		<h2 v-permission="'view_competitions'">我的竞赛</h2>
+
+		<!-- 竞赛信息表单 -->
+		<el-form :model="competitionForm" label-width="150px" class="form-grid">
+			<el-row :gutter="20">
+				<el-col
+					:span="12"
+					v-for="(header, index) in headers"
+					:key="index"
+				>
+					<el-form-item :label="header" class="form-item">
+						<template
+							v-if="
+								header !== '证书时间' &&
+								header !== '成绩公示文件' &&
+								header !== '证书扫描件'
+							"
+						>
+							<el-input
+								v-model="competitionForm[header]"
+								class="input-field"
+							/>
+						</template>
+						<template v-else-if="header === '证书时间'">
+							<el-date-picker
+								v-model="competitionForm[header]"
+								type="date"
+								placeholder="选择日期"
+							/>
+						</template>
+						<template v-else>
+							<el-upload
+								class="upload-demo"
+								drag
+								action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+								multiple
+								:auto-upload="false"
+								:show-file-list="true"
+								:before-upload="
+									(file) => handleFileChange(file, header)
+								"
+								ref="uploadRef"
+							>
+								<el-icon class="el-icon--upload"
+									><upload-filled
+								/></el-icon>
+								<div class="el-upload__text">
+									在这里放下文件或<em>点击选择文件</em>
+								</div>
+								<template #tip>
+									<div class="el-upload__tip">
+										<!-- jpg/png files with a size less than 500kb -->
+									</div>
+								</template>
+							</el-upload>
+							<el-button
+								type="primary"
+								@click="uploadFiles(header)"
+								>上传</el-button
+							>
+						</template>
+					</el-form-item>
+				</el-col>
+			</el-row>
+			<el-form-item>
+				<el-button type="primary" @click="submitForm">提交</el-button>
+			</el-form-item>
+		</el-form>
+
 		<!-- 已上传竞赛信息展示 -->
 		<el-table :data="myCompetitions" style="width: 100%">
 			<el-table-column prop="竞赛名称" label="竞赛名称" width="180" />
@@ -209,9 +241,7 @@ const uploadFiles = (field) => {
 .my-competitions-container {
 	padding: 20px;
 }
-.view-competitions {
-	padding: 20px 0;
-}
+
 .form-item {
 	display: flex;
 	align-items: center;

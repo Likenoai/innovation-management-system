@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
+
+// 定义常量
+const LOCAL_URL = 'http://localhost:8080';
+const MOCK_URL = 'http://127.0.0.1:4523/m1/5414981-0-default';
+const LLS_URL = 'http://192.168.1.36:8080';
+
 // https://vite.dev/config/
 export default defineConfig({
 	resolve: {
@@ -13,8 +19,8 @@ export default defineConfig({
 		open: true, // 运行时自动在浏览器打开
 		port: 8800,
 		proxy: {
-			'/api': {
-				target: 'http://127.0.0.1:4523/m1/5366142-0-default',
+			'/scgl': {
+				target: MOCK_URL, // 使用常量
 				// rewrite: (path) => path.replace(/^\/api/, ''),
 			},
 		},

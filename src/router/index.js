@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue';
 import Login from '../views/login/login.vue';
 import Layout from '../layout/index.vue';
 import { ElMessage } from 'element-plus';
+import { useLoginStore } from '../stores/loginStore';
 
 const routes = [
 	{
@@ -61,7 +62,7 @@ const routes = [
 			{
 				path: 'users-manage',
 				name: 'UsersManage',
-				component: () => import('../views/usersMag/usersMessage.vue'),
+				component: () => import('../views/usersMag/UsersMessage.vue'),
 			},
 		],
 	},
@@ -74,8 +75,9 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
+	const loginStore = useLoginStore();
 	const token = localStorage.getItem('token');
-	const permissions = localStorage.getItem('permissions');
+	const permissions = loginStore.permissions;
 
 	if (to.path === '/login') {
 		if (token) {

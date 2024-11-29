@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-
+import { useLoginStore } from '@/stores/loginStore';
+const loginStore = useLoginStore();
+console.log('loginStore.permissions:', loginStore.permissions);
 const particles = ref([]);
 const stats = ref([
 	{ title: '参与选手', count: 1200, icon: '🏃' },
