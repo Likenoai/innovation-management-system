@@ -7,7 +7,7 @@ import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 import zhCn from 'element-plus/es/locale/lang/zh-cn'; // 引入中文语言包
 import permission from './directives/permission';
-// 注册全局自定义指令 v-log
+import { setupInterceptors } from './api/interceptors';
 
 const app = createApp(App);
 app.directive('permission', permission);
@@ -17,5 +17,5 @@ app.use(pinia)
 		locale: zhCn, // 设置语言为中文
 	})
 	.mount('#app');
-
-// export { pinia }; // 导出 pinia 实例
+setupInterceptors();
+export { pinia }; // 导出 pinia 实例

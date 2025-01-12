@@ -1,71 +1,46 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Search, Upload, Download, Filter } from '@element-plus/icons-vue';
-import { fetchTableData, fetchMockData } from '@/api/competition'; // 导入封装的请求方法
+import { Search, Upload, Download } from '@element-plus/icons-vue';
+import { fetchTableData, fetchMockData } from '@/api/competition';
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
+
+// 数据和状态
+// 表格数据
 const tableData = ref([]);
-const page = ref(1); // 当前页码
-const pageSize = ref(20); // 每页显示的条数
-const totalItems = ref(0); // 总条目数
-
-const loading = ref(false); // 添加 loading 状态
-
-const loadTableData = async () => {
-	try {
-		loading.value = true; // 开始请求时设置 loading 为 true
-		const response = await fetchMockData(page.value, pageSize.value);
-		tableData.value = response.data;
-		totalItems.value = response.pagination.total;
-	} catch (error) {
-		console.error('加载数据失败:', error);
-	} finally {
-		loading.value = false; // 请求完成后无论成功或失败都设置 loading 为 false
-	}
-};
-
-onMounted(() => {
-	loadTableData();
-	updateTableHeight();
-	window.addEventListener('resize', updateTableHeight);
+const searchParams = ref({
+	page: 1,
+	pageSize: 20,
 });
-
-const tableHeight = ref('70vh'); // 设置表格高度为视口高度的70%
-
-const updateTableHeight = () => {
-	const windowHeight = window.innerHeight;
-	const heightMap = [
-		{ min: 4320, value: '90vh' }, // 8K
-		{ min: 2880, value: '85vh' }, // 5K
-		{ min: 2160, value: '80vh' }, // 4K
-		{ min: 1600, value: '76vh' }, // 1600p
-		{ min: 1440, value: '75vh' }, // 1440p
-		{ min: 1080, value: '74vh' }, // 1080p
-		{ min: 900, value: '64vh' }, // 900p
-		{ min: 768, value: '62vh' }, // 768p
-		{ min: 720, value: '60vh' }, // 720p
-	];
-
-	const matchedHeight = heightMap.find((item) => windowHeight >= item.min);
-	tableHeight.value = matchedHeight ? matchedHeight.value : '60vh';
-};
-
-// Remember to remove the event listener when the component is unmounted
-onUnmounted(() => {
-	window.removeEventListener('resize', updateTableHeight);
-});
-
+// 总条目数
+const totalItems = ref(0);
+// 加载状态
+const loading = ref(false);
+// 搜索查询
 const searchQuery = ref('');
+// 导出对话框可见性
+const exportDialogVisible = ref(false);
+// 导出列
+const exportColumns = ref([]);
+// 详情对话框可见性
+const dialogVisible = ref(false);
+// 选中的行数据
+const selectedRow = ref(null);
+// 显示提示信息
+const showHint = ref(true);
+// 显示关闭按钮
+const showCloseButton = ref(false);
+// 表格高度
+const tableHeight = ref('70vh');
 
-const handleAdd = () => {
-	// 添加竞赛逻辑
-};
-
-const handleEdit = (row) => {
-	// 编辑竞赛逻辑
-};
-
-const handleDelete = (row) => {
-	// 删除竞赛逻辑
-};
+// 表单和选项
+// 过滤表单
+const filterForm = ref({
+	college: '',
+	type: '',
+	dateRange: '',
+	keyword: '',
+});
 
 // 竞赛类型选项
 const competitionTypes = ref([
@@ -75,14 +50,6 @@ const competitionTypes = ref([
 	{ value: '工程技术类', label: '工程技术类' },
 	{ value: '人文艺术类', label: '人文艺术类' },
 ]);
-
-// 筛选条件
-const filterForm = ref({
-	college: '',
-	type: '',
-	dateRange: '',
-	keyword: '',
-});
 
 // 学院选项
 const colleges = ref([
@@ -97,7 +64,7 @@ const colleges = ref([
 	{ value: 'foreign', label: '外国语学院' },
 ]);
 
-// 根据竞赛类型筛选显示相关学院
+// 根据竞赛类型过滤学院
 const filteredColleges = computed(() => {
 	if (!filterForm.value.type) return colleges.value;
 
@@ -114,74 +81,184 @@ const filteredColleges = computed(() => {
 	);
 });
 
+// 生命周期钩子
+onMounted(() => {
+	// 加载表格数据
+	loadTableData();
+	// 更新表格高度
+	updateTableHeight();
+	// 监听窗口大小变化
+	window.addEventListener('resize', updateTableHeight);
+});
+
+onUnmounted(() => {
+	// 移除窗口大小变化监听
+	window.removeEventListener('resize', updateTableHeight);
+});
+
+// 方法
+// 加载表格数据
+const loadTableData = async () => {
+	try {
+		loading.value = true;
+		// const response = await fetchMockData(page.value, pageSize.value);
+		const response = await axios.post(
+			'/scgl/liGongCompetition/SelectCompetition',
+			searchParams.value
+		);
+		// console.log('response:', response);
+		tableData.value = response.data.records;
+		totalItems.value = response.data.total;
+	} catch (error) {
+		console.error('加载数据失败:', error);
+	} finally {
+		loading.value = false;
+	}
+};
+
+// 对表格原始数据进行格式化
+const booleanFormatter = (row, column, cellValue) => {
+	return cellValue ? '是' : '否';
+};
+
+// 更新表格高度
+const updateTableHeight = () => {
+	const windowHeight = window.innerHeight;
+	const heightMap = [
+		{ min: 4320, value: '90vh' },
+		{ min: 2880, value: '85vh' },
+		{ min: 2160, value: '80vh' },
+		{ min: 1600, value: '76vh' },
+		{ min: 1440, value: '75vh' },
+		{ min: 1080, value: '74vh' },
+		{ min: 900, value: '64vh' },
+		{ min: 768, value: '62vh' },
+		{ min: 720, value: '60vh' },
+	];
+
+	const matchedHeight = heightMap.find((item) => windowHeight >= item.min);
+	tableHeight.value = matchedHeight ? matchedHeight.value : '60vh';
+};
+
 // 处理搜索
 const handleSearch = () => {
 	// 处理搜索逻辑
 };
 
-// 处理导入
-const handleImport = (file) => {
-	// 处理文件导入逻辑
+// 处理文件导入
+const handleImport = async (file) => {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const response = await axios.post(
+		'/scgl/liGongCompetition/importCompetitionMessage',
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		}
+	);
+
+	if (response.code === 200) {
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
 };
 
-// 处理导出
-const exportDialogVisible = ref(false);
-const exportColumns = ref([]); // 存储选择的列名
+const downloadErrorFile = (errorMsg) => {
+	// 创建一个Blob对象，类型为text/plain
+	const blob = new Blob([errorMsg], { type: 'text/plain' });
+	// 创建一个URL对象
+	const url = window.URL.createObjectURL(blob);
+	// 创建一个a元素
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = '导入错误信息.txt'; // 设置下载文件的名称
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	// 释放URL对象
+	window.URL.revokeObjectURL(url);
+};
 
-const handleExport = () => {
-	// 处理数据导出逻辑
+// 显示导出对话框
+const showExportDialog = () => {
 	exportDialogVisible.value = true;
-
-	// 将选择的列名传递给后端
-	console.log('选择的列名:', exportColumns.value);
-	// 这里可以添加调用后端接口的逻辑，传递 exportColumns.value
 };
 
-const dialogVisible = ref(false);
-const selectedRow = ref(null);
+// 导出数据
+const exportDataFunc = async () => {
+	try {
+		const response = await axios.get(
+			'/scgl/liGongCompetition/exportCompetition',
+			{
+				params: {
+					// columns: exportColumns.value,
+				},
+				responseType: 'blob',
+			}
+		);
+		const url = window.URL.createObjectURL(new Blob([response]));
+		const link = document.createElement('a');
+		link.href = url;
+		link.setAttribute('download', '竞赛信息.xlsx');
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(url);
+		ElMessage.success('导出成功');
+	} catch (error) {
+		console.error('导出失败:', error);
+		ElMessage.error('导出失败');
+	}
+};
 
+// 显示详情
 const showDetails = (row) => {
-	console.log(row);
 	selectedRow.value = row;
+	console.log('selectedRow:', selectedRow.value);
 	dialogVisible.value = true;
 };
 
+// 处理分页变化
 const handlePageChange = (newPage) => {
-	page.value = newPage;
+	searchParams.value.page = newPage;
 	loadTableData();
 };
 
-const showHint = ref(true);
-const showCloseButton = ref(false);
-
+// 描述项和导出数据
+// 描述项
 const descriptionItems = [
-	{ label: '序号', prop: '序号' },
-	{ label: '竞赛名称', prop: '竞赛名称' },
-	{ label: '获奖项目名称', prop: '获奖项目名称' },
-	{ label: '获奖等级', prop: '获奖等级' },
-	{ label: '参赛学生位次', prop: '参赛学生位次' },
-	{ label: '学生姓名', prop: '学生姓名' },
-	{ label: '学号', prop: '学号' },
-	{ label: '学生所在学院', prop: '学生所在学院' },
-	{ label: '学生专业', prop: '学生专业' },
-	{ label: '学生年级', prop: '学生年级' },
-	{ label: '本/专', prop: '本/专' },
-	{ label: '竞赛级别', prop: '竞赛级别' },
-	{ label: '竞赛类别', prop: '竞赛类别' },
-	{ label: '指导教师', prop: '指导教师' },
-	{ label: '人员代码', prop: '人员代码' },
-	{ label: '指导位次', prop: '指导位次' },
-	{ label: '指导教师所在学院', prop: '指导教师所在学院' },
-	{ label: '耳队奖金（元）', prop: '耳队奖金（元）' },
-	{ label: '证书颁发时间', prop: '证书发时间' },
-	{ label: '证书颁发部门', prop: '证书颁发部门' },
-	{ label: '是否证书寄发', prop: '是否证书寄发' },
-	{ label: '是否公示', prop: '是否公示' },
-	{ label: '成绩公示文件', prop: '成绩公示文件' },
-	{ label: '证书扫描件', prop: '证书扫描件' },
+	{ label: '竞赛名称', prop: 'compName' },
+	{ label: '获奖项目名称', prop: 'awardProjName' },
+	{ label: '获奖等级', prop: 'awardLvl' },
+	{ label: '参赛学生位次', prop: 'stuPos' },
+	{ label: '学生姓名', prop: 'stuName' },
+	{ label: '学号', prop: 'stuId' },
+	{ label: '学生所在学院', prop: 'stuCollege' },
+	{ label: '学生专业', prop: 'stuMajor' },
+	{ label: '学生年级', prop: 'stuGrade' },
+	{ label: '本/专', prop: 'eduLvl' },
+	{ label: '竞赛级别', prop: 'compLvl' },
+	{ label: '竞赛类别', prop: 'compCate' },
+	{ label: '指导教师', prop: 'instrName' },
+	{ label: '人员代码', prop: 'persCode' },
+	{ label: '指导位次', prop: 'instrPos' },
+	{ label: '指导教师所在学院', prop: 'instrCollege' },
+	{ label: '团队奖金（元）', prop: 'teamAward' },
+	{ label: '证书颁发时间', prop: 'certDate' },
+	{ label: '证书颁发部门', prop: 'issueDept' },
+	{ label: '是否证书寄发', prop: 'specialAward' },
+	{ label: '是否公示', prop: 'isReviewed' },
+	{ label: '成绩公示文件', prop: 'resultUrl' },
+	{ label: '证书扫描件', prop: 'instrScore' },
 ];
 
-// 导出数据
+// 导出数据选项
 const exportData = [
 	{ value: '序号', desc: '序号' },
 	{ value: '竞赛名称', desc: '竞赛名称' },
@@ -208,6 +285,17 @@ const exportData = [
 	{ value: '成绩公示文件', desc: '成绩公示文件' },
 	{ value: '证书扫描件', desc: '证书扫描件' },
 ];
+
+// 格式化值
+const formatValue = (value, prop, index) => {
+	if (prop === 'index') {
+		return index + 1;
+	}
+	if (prop === 'specialAward' || prop === 'isReviewed') {
+		return value ? '是' : '否';
+	}
+	return value;
+};
 </script>
 
 <template>
@@ -283,9 +371,11 @@ const exportData = [
 			>
 				<div style="display: flex; gap: 10px">
 					<el-upload
+						v-permission="'import_competition'"
 						action="#"
 						:before-upload="handleImport"
-						:show-file-list="false"
+						:show-file-list="true"
+						accept=".xlsx, .xls"
 					>
 						<el-button type="primary" class="styled-button">
 							<el-icon><Upload /></el-icon>&nbsp;&nbsp;导入数据
@@ -293,8 +383,9 @@ const exportData = [
 					</el-upload>
 
 					<el-button
+						v-permission="'export_competition'"
 						type="success"
-						@click="handleExport"
+						@click="showExportDialog"
 						class="styled-button"
 					>
 						<el-icon><Download /></el-icon>&nbsp;&nbsp;导出数据
@@ -345,75 +436,73 @@ const exportData = [
 			:height="tableHeight"
 			v-loading="loading"
 		>
-			<el-table-column prop="序号" label="序号" width="60" />
+			<el-table-column type="index" label="序号" width="60" />
 			<el-table-column
-				prop="竞赛名称"
-				label="竞名称"
+				prop="compName"
+				label="竞赛名称"
 				width="200"
 				show-overflow-tooltip
 			/>
 			<el-table-column
-				prop="获奖项目名称"
+				prop="awardProjName"
 				label="获奖项目名称"
 				width="200"
 				show-overflow-tooltip
 			/>
-			<el-table-column prop="获奖等级" label="获奖等级" width="100" />
+			<el-table-column prop="awardLvl" label="获奖等级" width="100" />
+			<el-table-column prop="stuPos" label="参赛学生位次" width="120" />
+			<el-table-column prop="stuName" label="学生姓名" width="100" />
+			<el-table-column prop="stuId" label="学号" width="150" />
 			<el-table-column
-				prop="参赛学生位次"
-				label="参赛学生位次"
-				width="120"
-			/>
-			<el-table-column prop="学生姓名" label="学生姓名" width="100" />
-			<el-table-column prop="学号" label="学号" width="150" />
-			<el-table-column
-				prop="学生所在学院"
+				prop="stuCollege"
 				label="学生所在学院"
 				width="150"
 			/>
-			<el-table-column prop="学生专业" label="学生专业" width="150" />
-			<el-table-column prop="学生年级" label="学生年级" width="100" />
-			<el-table-column prop="本/专" label="本/专" width="80" />
-			<el-table-column prop="竞赛级别" label="竞赛级别" width="100" />
-			<el-table-column prop="竞赛类别" label="竞赛类别" width="100" />
-			<el-table-column prop="指导教师" label="指导教师" width="120" />
-			<el-table-column prop="人员代码" label="人员代码" width="120" />
-			<el-table-column prop="指导位次" label="指导位次" width="100" />
+			<el-table-column prop="stuMajor" label="学生专业" width="150" />
+			<el-table-column prop="stuGrade" label="学生年级" width="100" />
+			<el-table-column prop="eduLvl" label="本/专" width="80" />
+			<el-table-column prop="compLvl" label="竞赛级别" width="100" />
+			<el-table-column prop="compCate" label="竞赛类别" width="100" />
+			<el-table-column prop="instrName" label="指导教师" width="120" />
+			<el-table-column prop="persCode" label="人员代码" width="120" />
+			<el-table-column prop="instrPos" label="指导位次" width="100" />
 			<el-table-column
-				prop="指导教师所在学院"
+				prop="instrCollege"
 				label="指导教师所在学院"
 				width="150"
 			/>
 			<el-table-column
-				prop="耳队奖金（元）"
-				label="耳队奖金（元）"
+				prop="teamAward"
+				label="团队奖金（元）"
 				width="130"
 			/>
+			<el-table-column prop="certDate" label="证书颁发时间" width="120" />
 			<el-table-column
-				prop="证书颁发时间"
-				label="证书颁发时间"
-				width="120"
-			/>
-			<el-table-column
-				prop="证书颁发部门"
+				prop="issueDept"
 				label="证书颁发部门"
 				width="200"
 				show-overflow-tooltip
 			/>
 			<el-table-column
-				prop="是否证书寄发"
+				prop="specialAward"
 				label="是否证书寄发"
 				width="120"
+				:formatter="booleanFormatter"
 			/>
-			<el-table-column prop="是否公示" label="是否公示" width="100" />
 			<el-table-column
-				prop="成绩公示文件"
+				prop="isReviewed"
+				label="是否公示"
+				width="100"
+				:formatter="booleanFormatter"
+			/>
+			<el-table-column
+				prop="resultUrl"
 				label="成绩公示文件"
 				width="150"
 				show-overflow-tooltip
 			/>
 			<el-table-column
-				prop="证书扫描件"
+				prop="instrScore"
 				label="证书扫描件"
 				width="150"
 				show-overflow-tooltip
@@ -430,8 +519,8 @@ const exportData = [
 		<!-- 分页区域 -->
 		<div class="pagination-container">
 			<el-pagination
-				:current-page="page"
-				:page-size="pageSize"
+				:current-page="searchParams.page"
+				:page-size="searchParams.pageSize"
 				:total="totalItems"
 				layout="total, prev, pager, next, jumper"
 				@current-change="handlePageChange"
@@ -440,15 +529,24 @@ const exportData = [
 
 		<!-- 详情弹窗 -->
 		<el-dialog v-model="dialogVisible" title="详情">
-			<el-descriptions :column="2" border>
-				<el-descriptions-item
-					v-for="(item, index) in descriptionItems"
-					:key="index"
-					:label="item.label"
-				>
-					{{ selectedRow[item.prop] }}
-				</el-descriptions-item>
-			</el-descriptions>
+			<div>
+				<!-- 描述列表 -->
+				<el-descriptions :column="2" border>
+					<el-descriptions-item
+						v-for="(item, index) in descriptionItems"
+						:key="index"
+						:label="item.label"
+					>
+						{{
+							formatValue(
+								selectedRow[item.prop],
+								item.prop,
+								index
+							)
+						}}
+					</el-descriptions-item>
+				</el-descriptions>
+			</div>
 		</el-dialog>
 
 		<!-- 导出弹窗 -->
@@ -472,7 +570,7 @@ const exportData = [
 					class="footer-button"
 					style="display: flex; justify-content: center"
 				>
-					<el-button type="primary" @click="handleExport">
+					<el-button type="primary" @click="exportDataFunc">
 						确认导出
 					</el-button>
 				</div>
@@ -505,22 +603,18 @@ const exportData = [
 }
 
 .styled-button {
-	background: linear-gradient(135deg, #575786, #464c66); /* 更亮的渐变背景 */
+	background: linear-gradient(135deg, #575786, #464c66);
 	color: #fff;
 	padding: 1rem 1.5rem;
 	border-radius: 15px;
 	text-align: center;
 	transition: transform 0.3s ease, background 0.3s ease;
-	border: 1px solid #2f4560; /* 较亮的边框 */
+	border: 1px solid #2f4560;
 	font-weight: bold;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 
 	&:hover {
-		background: linear-gradient(
-			135deg,
-			#2a314e,
-			#1f3a60
-		); /* 悬停时较亮的渐变 */
+		background: linear-gradient(135deg, #2a314e, #1f3a60);
 		transform: translateY(-5px);
 		box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 	}

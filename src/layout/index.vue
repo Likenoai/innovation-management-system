@@ -12,10 +12,10 @@ import { useRouter, useRoute } from 'vue-router';
 import * as ElementPlusIcons from '@element-plus/icons-vue';
 import { menuConfig } from '../config/menu';
 import { ArrowLeft, ArrowRight, Trophy } from '@element-plus/icons-vue';
-import { useLoginStore } from '@/stores/loginStore';
+import { useMyLoginStore } from '@/stores/myLoginStore';
 import { CaretBottom, Management } from '@element-plus/icons-vue';
 
-const loginStore = useLoginStore();
+const loginStore = useMyLoginStore();
 const router = useRouter();
 const route = useRoute();
 const isCollapse = ref(false);

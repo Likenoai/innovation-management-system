@@ -17,7 +17,7 @@ export const menuConfig = [
 				permission: 'view_competitions',
 			},
 			{
-				path: '/competitions/my-competitions',
+				path: '/my-competitions',
 				title: '我的竞赛',
 				permission: 'view_my_competitions',
 			},
@@ -28,6 +28,48 @@ export const menuConfig = [
 		title: '创新创业项目',
 		icon: 'Files',
 		permission: 'view_innovation_projects',
+		children: [
+			{
+				path: '/innovation',
+				title: '创新创业项目',
+				permission: 'view_innovation_projects',
+			},
+			{
+				path: '/upload-innovation',
+				title: '上传项目',
+				permission: 'view_innovation_upload',
+			},
+			{
+				path: '/set-upload-innovation',
+				title: '设定学生提交项目信息',
+				permission: 'view_set_upload_innovation',
+			},
+			{
+				path: '/college-review',
+				title: '学院评审',
+				permission: 'view_college_review',
+			},
+			{
+				path: '/expert-review',
+				title: '专家评审',
+				permission: 'view_expert_review',
+			},
+			{
+				path: '/assign-experts',
+				title: '分配专家',
+				permission: 'view_assign_experts',
+			},
+			{
+				path: '/provincial-recommendation',
+				title: '推荐省赛项目',
+				permission: 'view_provincial_recommendation',
+			},
+			{
+				path: '/achievement-entry',
+				title: '成果录入',
+				permission: 'view_achievement_entry',
+			},
+		],
 	},
 	{
 		path: '/project-library',
@@ -46,16 +88,16 @@ export const menuConfig = [
 		icon: 'Setting',
 		permission: 'manage_system_settings',
 		children: [
-			{
-				path: '/user',
-				title: '用户管理',
-				permission: 'manage_all_users',
-			},
-			{
-				path: '/role',
-				title: '角色管理',
-				permission: 'manage_system_settings',
-			},
+			// {
+			// 	path: '/user',
+			// 	title: '用户管理',
+			// 	permission: 'manage_all_users',
+			// },
+			// {
+			// 	path: '/role',
+			// 	title: '角色管理',
+			// 	permission: 'manage_system_settings',
+			// },
 		],
 	},
 ];

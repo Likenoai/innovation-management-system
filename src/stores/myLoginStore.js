@@ -3,7 +3,7 @@ import { watch } from 'vue';
 export const useMyLoginStore = defineStore('myLogin', {
 	state: () => ({
 		token: '',
-		userRole: '',
+		role: '',
 		permissions: [],
 		userName: '',
 		id: '',
@@ -25,7 +25,7 @@ export const useMyLoginStore = defineStore('myLogin', {
 		toString() {
 			let output = [];
 			if (this.token) output.push(`Token: ${this.token}`);
-			if (this.userRole) output.push(`用户角色: ${this.userRole}`);
+			if (this.role) output.push(`用户角色: ${this.role}`);
 			if (this.permissions.length)
 				output.push(`权限: ${this.permissions.join(', ')}`);
 			if (this.userName) output.push(`用户名: ${this.userName}`);

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { useLoginStore } from '@/stores/loginStore.js';
 import { useTextStore } from '@/stores/textStore.js';
 import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
@@ -22,44 +21,31 @@ const registerData = ref({
 });
 const router = useRouter();
 const loginStore = useMyLoginStore();
-const myLoginStore = useMyLoginStore();
-const textStore = useTextStore();
-function setText() {
-	textStore.text = 'Hello, Pinia111111111111111111111!';
-	myLoginStore.token = '1234567890';
-	loginStore.token = '1234567890';
-}
-function initLoginStore() {
-	console.log('loginStore.token:', loginStore.token);
-	console.log('textStore.text:', textStore.text);
-}
 async function handleLogin() {
 	try {
 		const response = await axios.post('/scgl/CheckAndLogin/login', {
 			username: username.value,
 			password: password.value,
 		});
+		console.log('response:', response.code);
 
 		if (response.code === 200) {
 			let roleMap = {
-				1: 'school_admin',
-				2: 'college_admin',
-				3: 'expert',
-				4: 'teacher',
-				5: 'student',
+				1: 'super_admin',
+				2: 'school_admin',
+				3: 'college_admin',
+				4: 'expert',
+				5: 'teacher',
+				6: 'student',
 			};
-			// localStorage.setItem('token', response.data.token);
-			// console.log('response:', response);
 			// 将用户信息存储到 Pinia 仓库中
 			loginStore.token = response.data.token;
-			// myLoginStore.token = response.data.token;
 			loginStore.userName = response.data.userName;
 			loginStore.id = response.data.id;
 			loginStore.role = roleMap[response.data.role];
 			loginStore.permissions = rolePermissions[loginStore.role];
-			textStore.text = 'Hello, 请求内容中!';
 			ElMessage.success('登录成功');
-			// router.push('/');
+			router.push('/');
 		} else {
 			ElMessage.error('登录失败');
 		}
@@ -206,8 +192,6 @@ function initThreeBackground() {
 			<div class="title-container">
 				<h1 class="title">竞赛管理系统</h1>
 				<div class="title-decoration"></div>
-				<button @click="initLoginStore">初始化登录状态</button>
-				<button @click="setText">设置text</button>
 			</div>
 
 			<!-- 登录表单 -->

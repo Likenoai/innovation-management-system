@@ -1,8 +1,8 @@
-import { useLoginStore } from '@/stores/loginStore';
+import { useMyLoginStore } from '@/stores/myLoginStore.js';
 
 export default {
 	mounted(el, binding) {
-		const loginStore = useLoginStore();
+		const loginStore = useMyLoginStore();
 		const permission = binding.value;
 
 		// 初始检查权限

@@ -1,10 +1,11 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
-import { useLoginStore } from '@/stores/loginStore';
+import { Search, Upload, Download } from '@element-plus/icons-vue';
+import { useMyLoginStore } from '@/stores/myLoginStore';
 import UserManageCard from '@/components/UserManageCard.vue';
 import axios from 'axios';
 // 获取登录状态
-const loginStore = useLoginStore();
+const loginStore = useMyLoginStore();
 
 // 生成专家模拟数据
 const expertList = [];
@@ -60,17 +61,6 @@ async function updatePassword() {
 		ElMessage.error('密码修改失败: ' + error.message);
 	}
 }
-function exportTeacher() {
-	console.log('导出教师信息');
-}
-
-function exportStudent() {
-	console.log('导出学生信息');
-}
-
-function addExpert() {
-	console.log('添加专家账号');
-}
 
 function resetPassword(expert) {
 	console.log(`重置密码: ${expert.name}`);
@@ -103,12 +93,48 @@ const visibilityStates = {
 	student: ref(true),
 	self: ref(true),
 };
+function visibilityAllFalse() {
+	visibilityStates.expert.value = false;
+	visibilityStates.collegeAdmin.value = false;
+	visibilityStates.teacher.value = false;
+	visibilityStates.student.value = false;
+	visibilityStates.self.value = false;
+}
 
 function toggleVisibility(type) {
-	if (visibilityStates[type] !== undefined) {
-		visibilityStates[type].value = !visibilityStates[type].value;
+	if (!singlePageMode.value) {
+		if (visibilityStates[type] !== undefined) {
+			visibilityStates[type].value = !visibilityStates[type].value;
+		}
+	} else {
+		visibilityAllFalse();
+		visibilityStates[type].value = true;
 	}
 }
+
+/// 单页面模式S
+const singlePageMode = ref(false);
+
+// 切换单页面模式
+function toggleSinglePageMode() {
+	if (!singlePageMode.value) {
+		visibilityAllFalse();
+	}
+	singlePageMode.value = !singlePageMode.value;
+}
+/// 单页面模式E
+
+// 初始化可见性状态
+function initVisibilityStates() {
+	visibilityStates.expert.value = false;
+	visibilityStates.collegeAdmin.value = false;
+	visibilityStates.teacher.value = false;
+	visibilityStates.student.value = false;
+}
+
+onMounted(() => {
+	initVisibilityStates();
+});
 
 // 检查用户是否有权限查看某个卡片
 function hasPermission(permission) {
@@ -132,18 +158,95 @@ const buttonTypes = [
 const filteredButtonTypes = computed(() => {
 	return buttonTypes.filter((button) => hasPermission(button.permission));
 });
+
+/// 增加专家账号S
+let experParam = ref({
+	role: '4',
+	name: '',
+	username: '',
+	password: '',
+});
+// 对话框可见性
+const dialogVisible = ref(false);
+
+// 打开对话框
+const openDialog = () => {
+	dialogVisible.value = true;
+};
+
+// 提交专家信息
+const submitExpert = async () => {
+	let ref = await axios.post('/scgl/user/insertUser', experParam.value);
+	ElMessage.success(`添加${experParam.value.name}账号成功`);
+	experParam.value = {
+		role: '4',
+		name: '',
+		username: '',
+		password: '',
+	};
+	// 在这里添加提交逻辑，例如发送请求到后端
+	dialogVisible.value = false; // 关闭对话框
+};
+/// 增加专家账号E
+
+/// 信息导入S
+// 处理文件导入
+const handleImportStudent = async (file) => {
+	ElMessage.success('正在导入学生信息');
+	const formData = new FormData();
+	formData.append('file', file);
+	const response = await axios.post(
+		'/scgl/TeaAndStuMessage/importStudent',
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		}
+	);
+	if (response.code === 200) {
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
+};
+const handleImportTeacher = async (file) => {
+	ElMessage.success('正在导入教师信息');
+	const formData = new FormData();
+	formData.append('file', file);
+	const response = await axios.post(
+		'/scgl/TeaAndStuMessage/importTeacher',
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		}
+	);
+	if (response.code === 200) {
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
+};
+/// 信息导入E
 </script>
 
 <template>
 	<div class="users-manage-container">
 		<UserManageCard
+			:singlePageMode="singlePageMode"
 			v-permission="'view_expert_info'"
 			title="专家信息管理"
 			:visible="visibilityStates.expert.value"
 			@update:visible="(value) => (visibilityStates.expert.value = value)"
 		>
 			<template #actions>
-				<el-button type="primary" @click="addExpert" plain
+				<el-button type="primary" @click="openDialog" plain
 					>添加专家账号</el-button
 				>
 			</template>
@@ -202,7 +305,32 @@ const filteredButtonTypes = computed(() => {
 				</el-table>
 			</template>
 		</UserManageCard>
+
+		<!-- 添加专家账号对话框 -->
+		<el-dialog title="添加专家账号" v-model="dialogVisible" width="500px">
+			<el-form :model="experParam" label-width="100px">
+				<el-form-item label="姓名">
+					<el-input v-model="experParam.name" />
+				</el-form-item>
+				<el-form-item label="用户名">
+					<el-input v-model="experParam.username" />
+				</el-form-item>
+				<el-form-item label="密码">
+					<el-input
+						v-model="experParam.password"
+						type="password"
+						show-password
+					/>
+				</el-form-item>
+			</el-form>
+			<template #footer>
+				<el-button @click="dialogVisible = false">取消</el-button>
+				<el-button type="primary" @click="submitExpert">提交</el-button>
+			</template>
+		</el-dialog>
+
 		<UserManageCard
+			:singlePageMode="singlePageMode"
 			v-permission="'view_college_admin_info'"
 			title="学院管理员信息管理"
 			:visible="visibilityStates.collegeAdmin.value"
@@ -258,7 +386,9 @@ const filteredButtonTypes = computed(() => {
 				</el-table>
 			</template>
 		</UserManageCard>
+		<!-- 教师信息管理 -->
 		<UserManageCard
+			:singlePageMode="singlePageMode"
 			v-permission="'view_teacher_info'"
 			title="教师信息管理"
 			:visible="visibilityStates.teacher.value"
@@ -267,9 +397,16 @@ const filteredButtonTypes = computed(() => {
 			"
 		>
 			<template #actions>
-				<el-button type="primary" @click="exportTeacher" plain
-					>教师信息导入</el-button
+				<el-upload
+					action="#"
+					:before-upload="handleImportTeacher"
+					:show-file-list="true"
+					accept=".xlsx, .xls"
 				>
+					<el-button type="primary" plain>
+						<el-icon><Upload /></el-icon>&nbsp;&nbsp;教师信息导入
+					</el-button>
+				</el-upload>
 			</template>
 			<template #table>
 				<el-table
@@ -318,7 +455,9 @@ const filteredButtonTypes = computed(() => {
 				</el-table>
 			</template>
 		</UserManageCard>
+		<!-- 学生信息管理 -->
 		<UserManageCard
+			:singlePageMode="singlePageMode"
 			v-permission="'view_student_info'"
 			title="学生信息管理"
 			:visible="visibilityStates.student.value"
@@ -327,9 +466,16 @@ const filteredButtonTypes = computed(() => {
 			"
 		>
 			<template #actions>
-				<el-button type="primary" @click="exportStudent" plain
-					>学生信息导入</el-button
+				<el-upload
+					action="#"
+					:before-upload="handleImportStudent"
+					:show-file-list="true"
+					accept=".xlsx, .xls"
 				>
+					<el-button type="primary" plain>
+						<el-icon><Upload /></el-icon>&nbsp;&nbsp;学生信息导入
+					</el-button>
+				</el-upload>
 			</template>
 			<template #table>
 				<el-table
@@ -380,6 +526,7 @@ const filteredButtonTypes = computed(() => {
 		</UserManageCard>
 
 		<UserManageCard
+			:singlePageMode="singlePageMode"
 			v-permission="'view_self_info'"
 			title="当前用户密码管理"
 			:visible="visibilityStates.self.value"
@@ -441,6 +588,14 @@ const filteredButtonTypes = computed(() => {
 				"
 			>
 				{{ button.label }}
+			</el-button>
+			<el-button
+				:type="singlePageMode ? 'primary' : 'info'"
+				@click="toggleSinglePageMode"
+				round
+				style="margin: 0"
+			>
+				单页面模式
 			</el-button>
 		</div>
 	</div>

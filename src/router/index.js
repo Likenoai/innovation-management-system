@@ -3,7 +3,7 @@ import HomeView from '../views/HomeView.vue';
 import Login from '../views/login/login.vue';
 import Layout from '../layout/index.vue';
 import { ElMessage } from 'element-plus';
-import { useLoginStore } from '../stores/loginStore';
+import { useMyLoginStore } from '../stores/myLoginStore.js';
 
 const routes = [
 	{
@@ -22,6 +22,7 @@ const routes = [
 				component: HomeView,
 				meta: { requiresAuth: true },
 			},
+			// Competitions Module
 			{
 				path: 'competitions',
 				name: 'Competitions',
@@ -32,7 +33,7 @@ const routes = [
 				},
 			},
 			{
-				path: 'competitions/my-competitions',
+				path: 'my-competitions',
 				name: 'MyCompetitions',
 				component: () =>
 					import('../views/competitions/MyCompetitions.vue'),
@@ -41,6 +42,7 @@ const routes = [
 					permission: 'view_my_competitions',
 				},
 			},
+			// Innovation Module
 			{
 				path: 'innovation',
 				name: 'Innovation',
@@ -50,6 +52,84 @@ const routes = [
 					permission: 'view_innovation_projects',
 				},
 			},
+			{
+				// 学生上传项目
+				path: 'upload-innovation',
+				name: 'UploadInnovation',
+				component: () =>
+					import('../views/innovation/uploadInnovation.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_innovation_upload',
+				},
+			},
+			{
+				// 设定学生提交项目信息
+				path: 'set-upload-innovation',
+				name: 'SetUploadInnovation',
+				component: () =>
+					import('../views/innovation/setUploadInnovation.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_set_upload_innovation',
+				},
+			},
+			{
+				// 学院评审
+				path: 'college-review',
+				name: 'CollegeReview',
+				component: () =>
+					import('../views/innovation/collegeReview.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_college_review',
+				},
+			},
+			{
+				// 专家评审
+				path: 'expert-review',
+				name: 'ExpertReview',
+				component: () => import('../views/innovation/expertReview.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_expert_review',
+				},
+			},
+			{
+				// 分配专家
+				path: 'assign-experts',
+				name: 'AssignExperts',
+				component: () =>
+					import('../views/innovation/assignExperts.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_assign_experts',
+				},
+			},
+			{
+				// 推荐省赛项目
+				path: 'provincial-recommendation',
+				name: 'ProvincialRecommendation',
+				component: () =>
+					import('../views/innovation/provincialRecommendation.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_provincial_recommendation',
+				},
+			},
+			{
+				// 成功录入
+				path: 'achievement-entry',
+				name: 'AchievementEntry',
+				component: () =>
+					import('../views/innovation/achievementEntry.vue'),
+				meta: {
+					requiresAuth: true,
+					permission: 'view_achievement_entry',
+				},
+			},
+
+			// Project Library Module
 			{
 				path: 'project-library',
 				name: 'ProjectLibrary',
@@ -75,7 +155,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-	const loginStore = useLoginStore();
+	const loginStore = useMyLoginStore();
 	const token = loginStore.token;
 	const permissions = loginStore.permissions;
 

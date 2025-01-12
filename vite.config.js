@@ -6,7 +6,8 @@ import path from 'path';
 const LOCAL_URL = 'http://localhost:8080';
 const MOCK_URL = 'http://127.0.0.1:4523/m1/5414981-0-default';
 const LLS_URL = 'http://192.168.1.36:8080';
-
+const SERVER_URL = 'http://192.168.177.23:80';
+// /web/java11/scgl-server-0.0.1-SNAPSHOT.jar
 // https://vite.dev/config/
 export default defineConfig({
 	resolve: {
@@ -20,7 +21,7 @@ export default defineConfig({
 		port: 8800,
 		proxy: {
 			'/scgl': {
-				target: MOCK_URL, // 使用常量
+				target: SERVER_URL, // 使用常量
 				// rewrite: (path) => path.replace(/^\/api/, ''),
 			},
 		},

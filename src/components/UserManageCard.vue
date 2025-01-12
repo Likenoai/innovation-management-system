@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref, defineEmits, watch, toRef } from 'vue';
+import { defineProps, ref, defineEmits, watch, toRef, computed } from 'vue';
 import { Close } from '@element-plus/icons-vue';
 
 const props = defineProps({
@@ -11,12 +11,21 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	singlePageMode: {
+		type: Boolean,
+		default: true,
+	},
 });
 
 const emits = defineEmits(['update:visible']);
 
 const bodyClass = ref('show-flex');
 const visibleRef = toRef(props, 'visible');
+
+// 计算样式
+const cardStyle = computed(() => ({
+	transition: props.singlePageMode ? '0s' : '0.3s ease',
+}));
 
 function hideCard() {
 	bodyClass.value = 'hide-flex';
@@ -31,7 +40,7 @@ watch(visibleRef, (newVal) => {
 </script>
 
 <template>
-	<el-card class="user-manage-card" :class="bodyClass">
+	<el-card class="user-manage-card" :class="bodyClass" :style="cardStyle">
 		<el-icon v-if="visible" @click="hideCard" class="close-button"
 			><Close
 		/></el-icon>
@@ -57,7 +66,6 @@ watch(visibleRef, (newVal) => {
 .user-manage-card {
 	max-width: 100%;
 	overflow: hidden;
-	transition: 0.3s ease;
 	position: relative;
 	.user-manage-card-title {
 		font-size: 18px;

@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useLoginStore } from '@/stores/loginStore';
-const loginStore = useLoginStore();
+import { useMyLoginStore } from '@/stores/myLoginStore';
+const loginStore = useMyLoginStore();
 // console.log('loginStore.permissions:', loginStore.permissions);
 const particles = ref([]);
 const stats = ref([
