@@ -57,7 +57,9 @@ const routes = [
 				path: 'upload-innovation',
 				name: 'UploadInnovation',
 				component: () =>
-					import('../views/innovation/uploadInnovation.vue'),
+					import(
+						'../views/innovation/uploadInnovation/uploadInnovation.vue'
+					),
 				meta: {
 					requiresAuth: true,
 					permission: 'view_innovation_upload',
@@ -159,8 +161,8 @@ router.beforeEach((to, from, next) => {
 	const token = loginStore.token;
 	const permissions = loginStore.permissions;
 
-	console.log('router token:', token);
-	console.log('loginStore.role:', loginStore.role);
+	// console.log('router token:', token);
+	// console.log('loginStore.role:', loginStore.role);
 
 	if (to.path === '/login') {
 		if (token) {

@@ -1,0 +1,17 @@
+.styled-button {
+	background: linear-gradient(135deg, #575786, #464c66);
+	color: #fff;
+	padding: 1rem 1.5rem;
+	border-radius: 15px;
+	text-align: center;
+	transition: transform 0.3s ease, background 0.3s ease;
+	border: 1px solid #2f4560;
+	font-weight: bold;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+	&:hover {
+		background: linear-gradient(135deg, #2a314e, #1f3a60);
+		transform: translateY(-5px);
+		box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+	}
+}

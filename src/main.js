@@ -9,7 +9,15 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'; // 引入中文语言包
 import permission from './directives/permission';
 import { setupInterceptors } from './api/interceptors';
 
+// 使用pdf
+import VuePdfEmbed from 'vue-pdf-embed';
+
+// optional styles
+import 'vue-pdf-embed/dist/styles/annotationLayer.css';
+import 'vue-pdf-embed/dist/styles/textLayer.css';
+
 const app = createApp(App);
+app.component('VuePdfEmbed', VuePdfEmbed);
 app.directive('permission', permission);
 app.use(pinia)
 	.use(router)

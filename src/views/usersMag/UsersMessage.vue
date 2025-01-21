@@ -233,6 +233,28 @@ const handleImportTeacher = async (file) => {
 	}
 	return false;
 };
+
+const handleImportExpert = async (file) => {
+	ElMessage.success('正在导入教师信息');
+	const formData = new FormData();
+	formData.append('file', file);
+	const response = await axios.post(
+		'/scgl/TeaAndStuMessage/importExpert',
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		}
+	);
+	if (response.code === 200) {
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
+};
 /// 信息导入E
 </script>
 
@@ -246,9 +268,23 @@ const handleImportTeacher = async (file) => {
 			@update:visible="(value) => (visibilityStates.expert.value = value)"
 		>
 			<template #actions>
-				<el-button type="primary" @click="openDialog" plain
+				<el-button
+					type="primary"
+					@click="openDialog"
+					style="height: 42, margin-boo"
+					plain
 					>添加专家账号</el-button
 				>
+				<el-upload
+					action="#"
+					:before-upload="handleImportExpert"
+					:show-file-list="true"
+					accept=".xlsx, .xls"
+				>
+					<el-button type="primary" plain>
+						<el-icon><Upload /></el-icon>&nbsp;&nbsp;专家信息导入
+					</el-button>
+				</el-upload>
 			</template>
 			<template #table>
 				<el-table

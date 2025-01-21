@@ -4,10 +4,36 @@ import { Search, Upload, Download } from '@element-plus/icons-vue';
 import { fetchTableData, fetchMockData } from '@/api/competition';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-
+import '@/Styles/index.css';
 // 数据和状态
 // 表格数据
-const tableData = ref([]);
+const tableData = ref([
+	{
+		compName: '',
+		awardProjName: '',
+		awardLvl: '',
+		stuPos: '',
+		stuName: '',
+		stuId: '',
+		stuCollege: '',
+		stuMajor: '',
+		stuGrade: '',
+		eduLvl: '',
+		compLvl: '',
+		compCate: '',
+		instrName: '',
+		persCode: '',
+		instrPos: '',
+		instrCollege: '',
+		teamAward: '',
+		certDate: '',
+		issueDept: '',
+		specialAward: '',
+		isReviewed: '',
+		resultUrl: '',
+		instrScore: '',
+	},
+]);
 const searchParams = ref({
 	page: 1,
 	pageSize: 20,
@@ -40,6 +66,27 @@ const filterForm = ref({
 	type: '',
 	dateRange: '',
 	keyword: '',
+	awardLvl: '',
+	awardProjName: '',
+	certDate: '',
+	compLvl: '',
+	compName: '',
+	eduLvl: '',
+	importTime: '',
+	instrCollege: '',
+	instrName: '',
+	instrScore: '',
+	issueDept: '',
+	persCode: '',
+	resultUrl: '',
+	specialAward: '',
+	stuCollege: '',
+	stuCredits: '',
+	stuGrade: '',
+	stuId: '',
+	stuMajor: '',
+	stuName: '',
+	teamAward: '',
 });
 
 // 竞赛类型选项
@@ -141,8 +188,19 @@ const updateTableHeight = () => {
 };
 
 // 处理搜索
-const handleSearch = () => {
+const handleSearch = async () => {
 	// 处理搜索逻辑
+	let res = await axios
+		.post('/scgl/liGongCompetition/SelectCompetition', {
+			...filterForm.value,
+		})
+		.then((item) => {
+			console.log(item);
+			tableData.value;
+		})
+		.catch((error) => {
+			console.log(error);
+		});
 };
 
 // 处理文件导入
@@ -192,6 +250,8 @@ const showExportDialog = () => {
 
 // 导出数据
 const exportDataFunc = async () => {
+	console.log(exportColumns.value);
+
 	try {
 		const response = await axios.get(
 			'/scgl/liGongCompetition/exportCompetition',
@@ -304,59 +364,136 @@ const formatValue = (value, prop, index) => {
 		<div class="function-area">
 			<!-- 筛选表单 -->
 			<el-form :model="filterForm" inline class="filter-form">
-				<el-form-item label="竞赛类型">
-					<el-select
-						v-model="filterForm.type"
-						placeholder="选择竞赛类型"
-						class="competition-type-select"
-					>
-						<el-option
-							v-for="item in competitionTypes"
-							:key="item.value"
-							:label="item.label"
-							:value="item.value"
-						/>
-					</el-select>
-				</el-form-item>
-
-				<el-form-item label="学院">
-					<el-select
-						v-model="filterForm.college"
-						placeholder="选择学院"
-						class="competition-type-select"
-					>
-						<el-option
-							v-for="item in filteredColleges"
-							:key="item.value"
-							:label="item.label"
-							:value="item.value"
-						/>
-					</el-select>
-				</el-form-item>
-
-				<el-form-item label="时间范围">
-					<el-date-picker
-						v-model="filterForm.dateRange"
-						type="daterange"
-						range-separator="至"
-						start-placeholder="开始日期"
-						end-placeholder="结束日期"
+				<el-form-item label="竞赛名称">
+					<el-input
+						v-model="filterForm.compName"
+						placeholder="请输入竞赛名称"
 					/>
 				</el-form-item>
-
-				<el-form-item>
+				<el-form-item label="获奖项目名称">
 					<el-input
-						v-model="filterForm.keyword"
-						placeholder="搜索关键词"
-						:prefix-icon="Search"
-						style="padding-left: 10px"
-					>
-					</el-input>
+						v-model="filterForm.awardProjName"
+						placeholder="请输入获奖项目名称"
+					/>
+				</el-form-item>
+				<el-form-item label="获奖等级">
+					<el-input
+						v-model="filterForm.awardLvl"
+						placeholder="请输入获奖等级"
+					/>
+				</el-form-item>
+				<el-form-item label="证书颁发时间">
+					<el-input
+						v-model="filterForm.certDate"
+						placeholder="请输入证书颁发时间"
+					/>
+				</el-form-item>
+				<el-form-item label="竞赛级别">
+					<el-input
+						v-model="filterForm.compLvl"
+						placeholder="请输入竞赛级别"
+					/>
+				</el-form-item>
+				<el-form-item label="学历">
+					<el-input
+						v-model="filterForm.eduLvl"
+						placeholder="请输入学历"
+					/>
+				</el-form-item>
+				<el-form-item label="导入时间">
+					<el-input
+						v-model="filterForm.importTime"
+						placeholder="请输入导入时间"
+					/>
+				</el-form-item>
+				<el-form-item label="指导教师所在学院">
+					<el-input
+						v-model="filterForm.instrCollege"
+						placeholder="请输入指导教师所在学院"
+					/>
+				</el-form-item>
+				<el-form-item label="指导教师">
+					<el-input
+						v-model="filterForm.instrName"
+						placeholder="请输入指导教师"
+					/>
+				</el-form-item>
+				<el-form-item label="指导教师评分">
+					<el-input
+						v-model="filterForm.instrScore"
+						placeholder="请输入指导教师评分"
+					/>
+				</el-form-item>
+				<el-form-item label="颁发部门">
+					<el-input
+						v-model="filterForm.issueDept"
+						placeholder="请输入颁发部门"
+					/>
+				</el-form-item>
+				<el-form-item label="人员代码">
+					<el-input
+						v-model="filterForm.persCode"
+						placeholder="请输入人员代码"
+					/>
+				</el-form-item>
+				<el-form-item label="成绩公示文件">
+					<el-input
+						v-model="filterForm.resultUrl"
+						placeholder="请输入成绩公示文件"
+					/>
+				</el-form-item>
+				<el-form-item label="是否特殊奖">
+					<el-input
+						v-model="filterForm.specialAward"
+						placeholder="请输入是否特殊奖"
+					/>
+				</el-form-item>
+				<el-form-item label="学生所在学院">
+					<el-input
+						v-model="filterForm.stuCollege"
+						placeholder="请输入学生所在学院"
+					/>
+				</el-form-item>
+				<el-form-item label="学生学分">
+					<el-input
+						v-model="filterForm.stuCredits"
+						placeholder="请输入学生学分"
+					/>
+				</el-form-item>
+				<el-form-item label="学生年级">
+					<el-input
+						v-model="filterForm.stuGrade"
+						placeholder="请输入学生年级"
+					/>
+				</el-form-item>
+				<el-form-item label="学号">
+					<el-input
+						v-model="filterForm.stuId"
+						placeholder="请输入学号"
+					/>
+				</el-form-item>
+				<el-form-item label="专业">
+					<el-input
+						v-model="filterForm.stuMajor"
+						placeholder="请输入专业"
+					/>
+				</el-form-item>
+				<el-form-item label="学生姓名">
+					<el-input
+						v-model="filterForm.stuName"
+						placeholder="请输入学生姓名"
+					/>
+				</el-form-item>
+				<el-form-item label="团队奖金">
+					<el-input
+						v-model="filterForm.teamAward"
+						placeholder="请输入团队奖金"
+					/>
 				</el-form-item>
 				<el-form-item>
-					<el-button type="primary" @click="handleSearch">
-						搜索
-					</el-button>
+					<el-button type="primary" @click="handleSearch"
+						>搜索</el-button
+					>
 				</el-form-item>
 			</el-form>
 
@@ -585,7 +722,9 @@ const formatValue = (value, prop, index) => {
 	height: 100%;
 	padding: 20px;
 }
-
+.export-container {
+	min-height: 500px;
+}
 .function-area {
 	background-color: #f5f7fa;
 	padding: 20px;
@@ -600,24 +739,6 @@ const formatValue = (value, prop, index) => {
 .operation-buttons {
 	display: flex;
 	gap: 10px;
-}
-
-.styled-button {
-	background: linear-gradient(135deg, #575786, #464c66);
-	color: #fff;
-	padding: 1rem 1.5rem;
-	border-radius: 15px;
-	text-align: center;
-	transition: transform 0.3s ease, background 0.3s ease;
-	border: 1px solid #2f4560;
-	font-weight: bold;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-
-	&:hover {
-		background: linear-gradient(135deg, #2a314e, #1f3a60);
-		transform: translateY(-5px);
-		box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-	}
 }
 
 .el-table {
