@@ -18,6 +18,7 @@ const projects = ref(
 		state: 0, // 0 没有评审 1 通过评审 2 未通过评审
 	}))
 );
+
 const maxHeight = computed(() => {
 	const height = window.innerHeight;
 	return height - 260 + 'px';

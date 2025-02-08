@@ -1,7 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
-import Login from '../views/login/login.vue';
-import Layout from '../layout/index.vue';
 import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '../stores/myLoginStore.js';
 
@@ -9,17 +6,17 @@ const routes = [
 	{
 		path: '/login',
 		name: 'Login',
-		component: Login,
+		component: () => import('../views/login/login.vue'),
 	},
 	{
 		path: '/',
-		component: Layout,
+		component: () => import('../layout/index.vue'),
 		redirect: '/home',
 		children: [
 			{
 				path: 'home',
 				name: 'Home',
-				component: HomeView,
+				component: () => import('../views/HomeView.vue'),
 				meta: { requiresAuth: true },
 			},
 			// Competitions Module
@@ -145,6 +142,12 @@ const routes = [
 				path: 'users-manage',
 				name: 'UsersManage',
 				component: () => import('../views/usersMag/UsersMessage.vue'),
+			},
+
+			{
+				path: 'permissions-management',
+				name: 'permissions-management',
+				component: () => import('../views/PermissionsManagement.vue'),
 			},
 		],
 	},

@@ -239,7 +239,7 @@ const removeAssignedExpert = (project) => {
 				/>
 				<el-table-column prop="leader" label="负责人" width="120" />
 				<el-table-column prop="level" label="级别" width="100" />
-				<el-table-column label="分配专家">
+				<el-table-column label="分配专家" width="300">
 					<template #default="scope">
 						<el-select
 							v-model="scope.row.expert"

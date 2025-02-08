@@ -41,16 +41,18 @@ const categoryOptions = [
 	'AI生成',
 ];
 
-const getAllProjects = () => {
-	axios
-		.get('/api/projects')
-		.then((response) => {
-			projects.value = response.data;
-		})
-		.catch((error) => {
-			ElMessage.error('获取项目列表失败');
-			console.error(error);
-		});
+const getAllProjects = async () => {
+	console.log('111');
+	let res = await axios.get('/api/projects');
+	console.log(res);
+	// .then((response) => {
+	// 	console.log('response:', response);
+	// 	projects.value = response.data;
+	// })
+	// .catch((error) => {
+	// 	ElMessage.error('获取项目列表失败');
+	// 	console.error(error);
+	// });
 };
 
 const searchProjects = () => {
@@ -241,7 +243,7 @@ onMounted(() => {
 <template>
 	<div class="project-library-container">
 		<h1 class="title">项目库管理系统</h1>
-
+		<button @click="getAllProjects()">111</button>
 		<div class="button-group">
 			<el-button type="primary" @click="showProjectDialog"
 				>新增项目</el-button
