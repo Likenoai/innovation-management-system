@@ -4,29 +4,66 @@ import { Search, Upload, Download } from '@element-plus/icons-vue';
 import { useMyLoginStore } from '@/stores/myLoginStore';
 import UserManageCard from '@/components/UserManageCard.vue';
 import axios from 'axios';
+import * as staffApi from '@/api/staffApi.js';
+import { importDataApi } from '@/api/verifyApi.js';
+import { ElMessage } from 'element-plus';
 // 获取登录状态
 const loginStore = useMyLoginStore();
 
 // 生成专家模拟数据
-const expertList = [];
-for (let i = 1; i <= 20; i++) {
-	expertList.push({
-		id: i,
-		name: `专家${i}`,
-		title: '教授',
-		college: '计算机科学与技术学院',
-		expertise: '人工智能',
-		email: `expert${i}@university.edu`,
-		phone: `13800${i}000`,
-	});
-}
+const expertList = ref([]);
+const studentList = ref([]);
+const teacherList = ref([]);
+
+// 获取基础数据
+const getStudentList = async () => {
+	try {
+		const response = await staffApi.getStudentsApi(); // 调用 API 获取学生列表
+		console.log(response);
+		studentList.value = response.data;
+	} catch (error) {
+		ElMessage.error('获取学生列表失败: ' + error.message);
+	}
+};
+const getExpertList = async () => {
+	try {
+		const response = await staffApi.getExpertsApi(); // 调用 API 获取学生列表
+		console.log(response);
+		if (response.data && response.data.code === 0) {
+			expertList.value = response.data.data.recordList; // 更新专家列表
+		} else {
+			ElMessage.error('获取专家列表失败: ' + response.data.msg);
+		}
+	} catch (error) {
+		ElMessage.error('获取专家列表失败: ' + error.message);
+	}
+};
+const getTeachersList = async () => {
+	try {
+		const response = await staffApi.getTeachersApi(); // 调用 API 获取学生列表
+		console.log(response);
+		if (response.data && response.data.code === 0) {
+			teacherList.value = response.data.data.recordList; // 更新专家列表
+		} else {
+			ElMessage.error('获取教师列表失败: ' + response.data.msg);
+		}
+	} catch (error) {
+		ElMessage.error('获取教师列表失败: ' + error.message);
+	}
+};
+onMounted(() => {
+	getExpertList();
+	getTeachersList();
+	getStudentList();
+});
+const importData = (type) => {};
 
 const form = ref({
 	oldPassword: '',
 	newPassword: '',
 	confirmPassword: '',
 });
-import { ElMessage } from 'element-plus';
+
 // 功能区
 async function updatePassword() {
 	if (form.value.newPassword !== form.value.confirmPassword) {
@@ -113,7 +150,7 @@ function toggleVisibility(type) {
 }
 
 /// 单页面模式S
-const singlePageMode = ref(false);
+const singlePageMode = ref(true);
 
 // 切换单页面模式
 function toggleSinglePageMode() {
@@ -162,7 +199,6 @@ const filteredButtonTypes = computed(() => {
 /// 增加专家账号S
 let experParam = ref({
 	role: '4',
-	name: '',
 	username: '',
 	password: '',
 });
@@ -195,15 +231,7 @@ const handleImportStudent = async (file) => {
 	ElMessage.success('正在导入学生信息');
 	const formData = new FormData();
 	formData.append('file', file);
-	const response = await axios.post(
-		'/scgl/TeaAndStuMessage/importStudent',
-		formData,
-		{
-			headers: {
-				'Content-Type': 'multipart/form-data',
-			},
-		}
-	);
+	const response = await importDataApi({ file: formData, type: 0 });
 	if (response.code === 200) {
 		ElMessage.success('导入成功');
 	} else {
@@ -216,15 +244,7 @@ const handleImportTeacher = async (file) => {
 	ElMessage.success('正在导入教师信息');
 	const formData = new FormData();
 	formData.append('file', file);
-	const response = await axios.post(
-		'/scgl/TeaAndStuMessage/importTeacher',
-		formData,
-		{
-			headers: {
-				'Content-Type': 'multipart/form-data',
-			},
-		}
-	);
+	const response = await importDataApi({ file: formData, type: 1 });
 	if (response.code === 200) {
 		ElMessage.success('导入成功');
 	} else {
@@ -234,19 +254,24 @@ const handleImportTeacher = async (file) => {
 	return false;
 };
 
-const handleImportExpert = async (file) => {
-	ElMessage.success('正在导入教师信息');
+const handleImportCollegeExpert = async (file) => {
+	ElMessage.success('正在导入学院专家信息');
 	const formData = new FormData();
 	formData.append('file', file);
-	const response = await axios.post(
-		'/scgl/TeaAndStuMessage/importExpert',
-		formData,
-		{
-			headers: {
-				'Content-Type': 'multipart/form-data',
-			},
-		}
-	);
+	const response = await importDataApi({ file: formData, type: 2 });
+	if (response.code === 200) {
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
+};
+const handleImportExpert = async (file) => {
+	ElMessage.success('正在导入校内专家信息');
+	const formData = new FormData();
+	formData.append('file', file);
+	const response = await importDataApi({ file: formData, type: 3 });
 	if (response.code === 200) {
 		ElMessage.success('导入成功');
 	} else {
@@ -268,23 +293,26 @@ const handleImportExpert = async (file) => {
 			@update:visible="(value) => (visibilityStates.expert.value = value)"
 		>
 			<template #actions>
-				<el-button
-					type="primary"
-					@click="openDialog"
-					style="height: 42, margin-boo"
-					plain
-					>添加专家账号</el-button
-				>
-				<el-upload
-					action="#"
-					:before-upload="handleImportExpert"
-					:show-file-list="true"
-					accept=".xlsx, .xls"
-				>
-					<el-button type="primary" plain>
-						<el-icon><Upload /></el-icon>&nbsp;&nbsp;专家信息导入
-					</el-button>
-				</el-upload>
+				<div style="display: flex; gap: 10px; flex-wrap: wrap">
+					<el-button
+						type="primary"
+						@click="openDialog"
+						style="height: 42"
+						plain
+						>添加专家账号</el-button
+					>
+					<el-upload
+						action="#"
+						:before-upload="handleImportExpert"
+						:show-file-list="true"
+						accept=".xlsx, .xls"
+					>
+						<el-button type="primary" plain>
+							<el-icon><Upload /></el-icon
+							>&nbsp;&nbsp;专家信息导入
+						</el-button>
+					</el-upload>
+				</div>
 			</template>
 			<template #table>
 				<el-table
@@ -345,9 +373,6 @@ const handleImportExpert = async (file) => {
 		<!-- 添加专家账号对话框 -->
 		<el-dialog title="添加专家账号" v-model="dialogVisible" width="500px">
 			<el-form :model="experParam" label-width="100px">
-				<el-form-item label="姓名">
-					<el-input v-model="experParam.name" />
-				</el-form-item>
 				<el-form-item label="用户名">
 					<el-input v-model="experParam.username" />
 				</el-form-item>

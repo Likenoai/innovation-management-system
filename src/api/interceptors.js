@@ -5,11 +5,11 @@ import { storeToRefs } from 'pinia';
 export function setupInterceptors() {
 	const myLoginStore = useMyLoginStore();
 	const { token } = storeToRefs(myLoginStore);
-
+	console.log(token);
 	axios.interceptors.request.use(
 		(config) => {
 			if (token.value) {
-				config.headers.token = `${token.value}`;
+				config.headers['SC-TOKEN'] = `Bearer ${token.value}`;
 				config.headers.Authorization = `Bearer ${token.value}`;
 			}
 			return config;

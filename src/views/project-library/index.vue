@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import * as projectApi from '@/api/projectApi.js';
 import {
 	ElButton,
 	ElInput,
@@ -23,16 +24,7 @@ const searchKeyword = ref('');
 const searchCategory = ref('');
 const dialogVisible = ref(false);
 const loading = ref(false);
-const newProject = reactive({
-	projectName: '',
-	projectNumber: '',
-	category: '',
-	contactPerson: '',
-	contactInfo: '',
-	projectDescription: '',
-	projectKeywords: '',
-	isAiGenerated: false,
-});
+console.log(projectApi);
 const categoryOptions = [
 	'学生项目',
 	'教师项目',
@@ -43,19 +35,19 @@ const categoryOptions = [
 
 const getAllProjects = async () => {
 	console.log('111');
-	let res = await axios.get('/api/projects');
-	console.log(res);
-	// .then((response) => {
-	// 	console.log('response:', response);
-	// 	projects.value = response.data;
-	// })
-	// .catch((error) => {
-	// 	ElMessage.error('获取项目列表失败');
-	// 	console.error(error);
-	// });
+	let res = await projectApi
+		.getProjectsApi()
+		.then((response) => {
+			console.log('response:', response);
+			projects.value = response.data;
+		})
+		.catch((error) => {
+			ElMessage.error('获取项目列表失败');
+			console.error(error);
+		});
 };
 
-const searchProjects = () => {
+const searchProjects = async () => {
 	const params = new URLSearchParams();
 	if (searchKeyword.value) {
 		params.append('keyword', searchKeyword.value);
@@ -63,9 +55,8 @@ const searchProjects = () => {
 	if (searchCategory.value) {
 		params.append('category', searchCategory.value);
 	}
-
-	axios
-		.get(`/api/projects/search?${params.toString()}`)
+	await projectApi
+		.searchProjectsApi(params)
 		.then((response) => {
 			projects.value = response.data;
 		})
@@ -90,10 +81,20 @@ const showProjectDialog = (project = null) => {
 		});
 	}
 };
-
+// 新增项目Api
+const newProject = reactive({
+	projectName: '',
+	projectNumber: '',
+	category: '',
+	contactPerson: '',
+	contactInfo: '',
+	projectDescription: '',
+	projectKeywords: '',
+	isAiGenerated: false,
+});
 const createProject = () => {
-	axios
-		.post('/api/projects', newProject)
+	projectApi
+		.createProjectApi(newProject)
 		.then(() => {
 			ElMessage.success('创建成功');
 			dialogVisible.value = false;
@@ -145,9 +146,10 @@ const generateAIProject = () => {
 
 			loading.value = true;
 			ElMessage.info('正在生成项目，请稍候...');
-
-			axios
-				.post('/api/ai-projects/generate', {
+			console.log(keyword);
+			console.log(parseInt(numProjects));
+			projectApi
+				.generateProjectsApi({
 					keyword: keyword,
 					numProjects: parseInt(numProjects),
 				})
@@ -203,9 +205,13 @@ const viewProject = (project) => {
 		}
 	);
 };
-
+let isRedact = ref(false);
+let currentProjectId = ref(null);
 const editProject = (project) => {
+	console.log(project);
 	dialogVisible.value = true;
+	isRedact.value = true;
+	currentProjectId.value = project.id;
 	newProject.projectName = project.projectName;
 	newProject.projectNumber = project.projectNumber;
 	newProject.category = project.category;
@@ -213,6 +219,18 @@ const editProject = (project) => {
 	newProject.contactInfo = project.contactInfo;
 	newProject.projectDescription = project.projectDescription;
 	newProject.projectKeywords = project.projectKeywords;
+};
+const updateProject = async () => {
+	let res = await projectApi
+		.updateProjectApi({
+			id: currentProjectId.value,
+			...newProject,
+		})
+		.then(() => {
+			getAllProjects();
+		});
+
+	dialogVisible.value = false;
 };
 
 const getTagType = (category) => {
@@ -228,7 +246,7 @@ const getTagType = (category) => {
 
 const downloadTemplate = () => {
 	const link = document.createElement('a');
-	link.href = '/api/projects/template';
+	link.href = '/导入模板.xlsx';
 	link.download = 'project_template.xlsx';
 	document.body.appendChild(link);
 	link.click();
@@ -242,14 +260,13 @@ onMounted(() => {
 
 <template>
 	<div class="project-library-container">
-		<h1 class="title">项目库管理系统</h1>
-		<button @click="getAllProjects()">111</button>
+		<h1 class="title">项目库</h1>
 		<div class="button-group">
 			<el-button type="primary" @click="showProjectDialog"
 				>新增项目</el-button
 			>
 			<el-upload
-				action="/api/projects/import"
+				action="/api/project/import"
 				:show-file-list="false"
 				:on-success="handleImportSuccess"
 				:on-error="handleImportError"
@@ -262,9 +279,9 @@ onMounted(() => {
 				@click="generateAIProject"
 				>AI生成项目</el-button
 			>
-			<a href="/api/projects/template" download="project_template.xlsx">
-				<el-button type="info">下载模板</el-button>
-			</a>
+			<el-button type="info" @click="downloadTemplate"
+				>下载模板</el-button
+			>
 		</div>
 
 		<div class="search-container">
@@ -293,7 +310,12 @@ onMounted(() => {
 		</div>
 
 		<el-table :data="projects" style="width: 100%" border stripe>
-			<el-table-column label="序号" width="60">
+			<el-table-column
+				label="序号"
+				width="60"
+				header-align="center"
+				align="center"
+			>
 				<template #default="{ $index }">
 					{{ $index + 1 }}
 				</template>
@@ -302,10 +324,11 @@ onMounted(() => {
 			<el-table-column
 				prop="projectNumber"
 				label="项目编号"
-				width="120"
+				header-align="center"
+				align="center"
 			></el-table-column>
 
-			<el-table-column prop="projectName" label="项目名称" width="180">
+			<el-table-column prop="projectName" label="项目名称">
 				<template #default="{ row }">
 					<div>
 						{{ row.projectName }}
@@ -322,7 +345,13 @@ onMounted(() => {
 				</template>
 			</el-table-column>
 
-			<el-table-column prop="category" label="项目类型" width="120">
+			<el-table-column
+				prop="category"
+				label="项目类型"
+				width="120"
+				header-align="center"
+				align="center"
+			>
 				<template #default="{ row }">
 					<el-tag :type="getTagType(row.category)">
 						{{ row.category }}
@@ -334,21 +363,18 @@ onMounted(() => {
 				prop="contactPerson"
 				label="联系人"
 				width="100"
+				header-align="center"
+				align="center"
 			></el-table-column>
 
 			<el-table-column
 				prop="contactInfo"
 				label="联系方式"
-				width="120"
+				header-align="center"
+				align="center"
 			></el-table-column>
 
-			<el-table-column prop="initiationDate" label="创建时间" width="160">
-				<template #default="{ row }">
-					{{ formatDate(row.initiationDate) }}
-				</template>
-			</el-table-column>
-
-			<el-table-column prop="projectDescription" label="项目描述">
+			<!-- <el-table-column prop="projectDescription" label="项目描述">
 				<template #default="{ row }">
 					<el-tooltip
 						class="item"
@@ -361,9 +387,15 @@ onMounted(() => {
 						</div>
 					</el-tooltip>
 				</template>
-			</el-table-column>
+			</el-table-column> -->
 
-			<el-table-column prop="projectKeywords" label="关键词" width="120">
+			<el-table-column
+				prop="projectKeywords"
+				label="关键词"
+				width="120"
+				header-align="center"
+				align="center"
+			>
 				<template #default="{ row }">
 					<el-tag size="mini" v-if="row.projectKeywords">{{
 						row.projectKeywords
@@ -371,7 +403,24 @@ onMounted(() => {
 				</template>
 			</el-table-column>
 
-			<el-table-column label="操作" width="120" fixed="right">
+			<el-table-column
+				prop="initiationDate"
+				label="创建时间"
+				width="160"
+				header-align="center"
+				align="center"
+			>
+				<template #default="{ row }">
+					{{ formatDate(row.initiationDate) }}
+				</template>
+			</el-table-column>
+			<el-table-column
+				label="操作"
+				width="180"
+				fixed="right"
+				header-align="center"
+				align="center"
+			>
 				<template #default="{ row }">
 					<el-button
 						type="text"
@@ -438,8 +487,17 @@ onMounted(() => {
 			</el-form>
 			<div slot="footer">
 				<el-button @click="dialogVisible = false">取消</el-button>
-				<el-button type="primary" @click="createProject"
+				<el-button
+					type="primary"
+					@click="createProject"
+					v-show="!isRedact"
 					>确定</el-button
+				>
+				<el-button
+					type="primary"
+					@click="updateProject"
+					v-show="isRedact"
+					>更新</el-button
 				>
 			</div>
 		</el-dialog>

@@ -51,7 +51,6 @@ const filterMenus = (menus) => {
 		) {
 			return false;
 		}
-
 		if (menu.children) {
 			menu.children = filterMenus(menu.children);
 			return menu.children.length > 0;
@@ -187,7 +186,7 @@ onBeforeUnmount(() => {
 		>
 			<div class="project-title">
 				<el-icon><Management /></el-icon>
-				<span v-if="!isCollapse">双创管理系统</span>
+				<span v-if="!isCollapse">创新创业平台</span>
 			</div>
 			<el-menu
 				:default-active="activeMenu"

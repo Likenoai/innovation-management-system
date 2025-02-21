@@ -6,6 +6,12 @@ export const menuConfig = [
 		permission: null,
 	},
 	{
+		path: '/permission',
+		title: '权限管理',
+
+		permission: 'view_permission',
+	},
+	{
 		path: '/competitions',
 		title: '竞赛管理',
 		icon: 'Trophy',

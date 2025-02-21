@@ -15,7 +15,6 @@ import VuePdfEmbed from 'vue-pdf-embed';
 // optional styles
 import 'vue-pdf-embed/dist/styles/annotationLayer.css';
 import 'vue-pdf-embed/dist/styles/textLayer.css';
-
 const app = createApp(App);
 app.component('VuePdfEmbed', VuePdfEmbed);
 app.directive('permission', permission);

@@ -1,49 +1,60 @@
 <script setup>
-import axios from 'axios';
+import { loginApi, addApi } from '@/api/userApi.js';
+import { getRoleApi } from '@/api/permissionApi.js';
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { useTextStore } from '@/stores/textStore.js';
 import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { rolePermissions } from '@/config/permissions';
+const loginParam = ref({
+	account: '',
+	password: '',
+});
 
-const username = ref('');
-const password = ref('');
 const isLoginMode = ref(true);
-const registerData = ref({
+const registerParam = ref({
 	username: '',
 	password: '',
 	confirmPassword: '',
-	name: '',
-	role: '5', // 默认身份为学生
+	role: '6', // 默认身份为学生
 });
 const router = useRouter();
 const loginStore = useMyLoginStore();
+// 处理登录
 async function handleLogin() {
+	let isPass = await checkCode();
+	console.log(isPass);
+	if (isPass != null && isPass) {
+		// ElMessage.success('验证码成功');
+	} else {
+		ElMessage.error('验证码错误');
+		return;
+	}
+
 	try {
-		const response = await axios.post('/scgl/CheckAndLogin/login', {
-			username: username.value,
-			password: password.value,
+		const response = await loginApi({
+			...loginParam.value,
+		}).then(async (loginData) => {
+			// console.log(loginData);
+			let res = await getRoleApi(loginData.data.roleId).then(
+				(permissionData) => {
+					loginStore.permissions = permissionData.data.map((item) => {
+						return item.permissionCode;
+					});
+					// console.log(loginStore.permissions);
+				}
+			);
+			return loginData;
 		});
-		console.log('response:', response.code);
+		// console.log('response:', response);
 
 		if (response.code === 200) {
-			let roleMap = {
-				1: 'super_admin',
-				2: 'school_admin',
-				3: 'college_admin',
-				4: 'expert',
-				5: 'teacher',
-				6: 'student',
-			};
 			// 将用户信息存储到 Pinia 仓库中
-			loginStore.token = response.data.token;
-			loginStore.userName = response.data.userName;
-			loginStore.id = response.data.id;
-			loginStore.role = roleMap[response.data.role];
-			loginStore.permissions = rolePermissions[loginStore.role];
+			loginStore.setUserInfo({
+				...response.data,
+			});
+			// loginStore.logSelt();
 			ElMessage.success('登录成功');
 			router.push('/');
 		} else {
@@ -56,19 +67,19 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-	if (registerData.value.password !== registerData.value.confirmPassword) {
+	let isPass = await checkStaff();
+	if (isPass == null) {
+		ElMessage.error('用户名错误');
+		return;
+	}
+	if (registerParam.value.password !== registerParam.value.confirmPassword) {
 		ElMessage.error('两次输入的密码不一致');
 		return;
 	}
-
 	try {
-		const response = await axios.post('/scgl/CheckAndLogin/check', {
-			username: registerData.value.username,
-			password: registerData.value.password,
-			name: registerData.value.name,
-			role: registerData.value.role,
+		const response = await addApi({
+			...registerParam.value,
 		});
-
 		if (response.code === 200) {
 			ElMessage.success('注册成功');
 			isLoginMode.value = true;
@@ -174,6 +185,38 @@ function initThreeBackground() {
 
 	animate();
 }
+
+import * as verifyApi from '@/api/verifyApi.js';
+
+let base64Image = ref();
+let vrf = ref();
+let imagesId = ref();
+let isPass = ref(false);
+const getCode = async () => {
+	let res = await verifyApi.getCodeApi();
+	console.log(res);
+	base64Image.value = res.data.base64;
+	imagesId.value = res.data.id;
+};
+const checkCode = async () => {
+	let res = await verifyApi.checkCodeApi({
+		id: imagesId.value,
+		text: vrf.value,
+	});
+	console.log(res);
+	isPass.value = res.data;
+	return res.data;
+};
+const checkStaff = async () => {
+	let res = await verifyApi.checkStaffApi({
+		account: registerParam.value.username,
+		type: registerParam.value.role == '6' ? '0' : '1',
+	});
+	return res.data;
+};
+onMounted(() => {
+	getCode();
+});
 </script>
 
 <template>
@@ -190,7 +233,7 @@ function initThreeBackground() {
 
 		<div class="login-content">
 			<div class="title-container">
-				<h1 class="title">竞赛管理系统</h1>
+				<h1 class="title">德州学院创新创业教育数智化平台</h1>
 				<div class="title-decoration"></div>
 			</div>
 
@@ -205,7 +248,7 @@ function initThreeBackground() {
 					<input
 						type="text"
 						id="username"
-						v-model="username"
+						v-model="loginParam.account"
 						required
 						@focus="handleFocus"
 						@blur="handleBlur"
@@ -218,12 +261,21 @@ function initThreeBackground() {
 					<input
 						type="password"
 						id="password"
-						v-model="password"
+						v-model="loginParam.password"
 						required
 						@focus="handleFocus"
 						@blur="handleBlur"
 					/>
 					<div class="input-line"></div>
+				</div>
+
+				<div class="form-group verification-wrapper">
+					<input
+						type="text"
+						v-model="vrf"
+						style="margin-right: 10px"
+					/>
+					<img :src="base64Image" alt="" @click="getCode" />
 				</div>
 
 				<button type="submit" class="login-button">
@@ -239,20 +291,7 @@ function initThreeBackground() {
 					<input
 						type="text"
 						id="register-username"
-						v-model="registerData.username"
-						required
-						@focus="handleFocus"
-						@blur="handleBlur"
-					/>
-					<div class="input-line"></div>
-				</div>
-
-				<div class="form-group">
-					<label for="real-name">真实姓名</label>
-					<input
-						type="text"
-						id="real-name"
-						v-model="registerData.name"
+						v-model="registerParam.username"
 						required
 						@focus="handleFocus"
 						@blur="handleBlur"
@@ -265,7 +304,7 @@ function initThreeBackground() {
 					<input
 						type="password"
 						id="register-password"
-						v-model="registerData.password"
+						v-model="registerParam.password"
 						required
 						@focus="handleFocus"
 						@blur="handleBlur"
@@ -278,7 +317,7 @@ function initThreeBackground() {
 					<input
 						type="password"
 						id="confirm-password"
-						v-model="registerData.confirmPassword"
+						v-model="registerParam.confirmPassword"
 						required
 						@focus="handleFocus"
 						@blur="handleBlur"
@@ -288,9 +327,9 @@ function initThreeBackground() {
 
 				<div class="form-group">
 					<label>身份选择</label>
-					<el-radio-group v-model="registerData.role">
-						<el-radio label="5">学生</el-radio>
-						<el-radio label="4">教师</el-radio>
+					<el-radio-group v-model="registerParam.role">
+						<el-radio label="6">学生</el-radio>
+						<el-radio label="5">教师</el-radio>
 					</el-radio-group>
 				</div>
 
@@ -327,6 +366,12 @@ function initThreeBackground() {
 	z-index: 1;
 }
 
+.verification-wrapper {
+	display: flex;
+	img {
+		height: 48px;
+	}
+}
 .login-content {
 	position: relative;
 	z-index: 2;

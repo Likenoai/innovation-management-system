@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import BasicInfo from './BasicInfo.vue';
+import BasicInfo from './basicInfo/index.vue';
 import TeamInfo from './TeamInfo.vue';
 import SupervisorInfo from './SupervisorInfo.vue';
 import axios from 'axios';
