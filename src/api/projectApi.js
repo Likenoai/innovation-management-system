@@ -45,7 +45,7 @@ export const getProjectByIdApi = withErrorHandling(getProjectByIdApiFunction);
 
 // 搜索项目
 const searchProjectsApiFunction = async (params) => {
-	let res = await axios.get('/api/project/search', { params });
+	let res = await axios.get('/api/project/search?' + params);
 	return res;
 };
 export const searchProjectsApi = withErrorHandling(searchProjectsApiFunction);
@@ -64,14 +64,21 @@ export const generateProjectsApi = withErrorHandling(
 
 // 项目模板
 const downloadTemplateApiFunction = async (param) => {
-	let res = await axios.post('/api/project/import', param, {
-		responseType: 'blob',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-	});
+	let res = await axios.get('/api/project/template?' + param);
 	return res;
 };
 export const downloadTemplateApi = withErrorHandling(
 	downloadTemplateApiFunction
 );
+
+// 模板导入
+const importProjectApiFunction = async (param) => {
+	console.log(param);
+	let res = await axios.post('/api/project/import', param, {
+		headers: {
+			'Content-Type': 'multipart/form-data',
+		},
+	});
+	return res;
+};
+export const importProjectApi = withErrorHandling(importProjectApiFunction);

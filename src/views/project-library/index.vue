@@ -17,14 +17,29 @@ import {
 	ElMessageBox,
 	ElMessage,
 } from 'element-plus';
-import axios from 'axios';
-
-const projects = ref([]);
-const searchKeyword = ref('');
-const searchCategory = ref('');
+import { pagingSearch } from '../../utils/api';
+import { handleTableHeight } from '@/utils/index.js';
 const dialogVisible = ref(false);
 const loading = ref(false);
-console.log(projectApi);
+const projects = ref([]);
+
+/**
+ * 项目搜索参数类
+ */
+class projectSearchParams extends pagingSearch {
+	constructor(keyword = '', category = '', pageNum, pageSize) {
+		super(pageNum, pageSize); // 调用父类构造函数
+		this.keyword = keyword; // 搜索关键词
+		this.category = category; // 项目类别
+	}
+	toQueryString() {
+		const params = new URLSearchParams(super.toQueryString());
+		params.append('keyword', this.keyword);
+		params.append('category', this.category);
+		return params.toString();
+	}
+}
+const params = ref(new projectSearchParams('', '', 1, 30));
 const categoryOptions = [
 	'学生项目',
 	'教师项目',
@@ -33,6 +48,9 @@ const categoryOptions = [
 	'AI生成',
 ];
 
+/**
+ * 获取所有项目
+ */
 const getAllProjects = async () => {
 	console.log('111');
 	let res = await projectApi
@@ -47,24 +65,42 @@ const getAllProjects = async () => {
 		});
 };
 
+/**
+ * 搜索项目
+ */
 const searchProjects = async () => {
-	const params = new URLSearchParams();
-	if (searchKeyword.value) {
-		params.append('keyword', searchKeyword.value);
-	}
-	if (searchCategory.value) {
-		params.append('category', searchCategory.value);
-	}
+	tableLoading.value = true;
 	await projectApi
-		.searchProjectsApi(params)
+		.searchProjectsApi(params.value.toQueryString())
 		.then((response) => {
-			projects.value = response.data;
+			projects.value = response.data.recordList;
+			params.value.total = response.data.total;
+			tableLoading.value = false;
 		})
 		.catch((error) => {
 			ElMessage.error('搜索失败：' + error.message);
 		});
 };
 
+/**
+ * 处理分页变化
+ * @param {number} page - 当前页码
+ */
+const handlePageChange = (page) => {
+	params.value.pageNum = page;
+	// 这里可以根据当前页码和每页大小来更新表格数据
+	searchProjects();
+};
+
+onMounted(() => {
+	searchProjects();
+});
+
+const tableHeight = handleTableHeight(325);
+/**
+ * 显示项目对话框
+ * @param {Object|null} project - 要编辑的项目对象，默认为null表示新增项目
+ */
 const showProjectDialog = (project = null) => {
 	dialogVisible.value = true;
 	if (project) {
@@ -92,6 +128,9 @@ const newProject = reactive({
 	projectKeywords: '',
 	isAiGenerated: false,
 });
+/**
+ * 创建新项目
+ */
 const createProject = () => {
 	projectApi
 		.createProjectApi(newProject)
@@ -106,6 +145,11 @@ const createProject = () => {
 		});
 };
 
+/**
+ * 格式化日期
+ * @param {string} dateString - 日期字符串
+ * @returns {string} 格式化后的日期
+ */
 const formatDate = (dateString) => {
 	if (!dateString) return '';
 	const date = new Date(dateString);
@@ -113,11 +157,12 @@ const formatDate = (dateString) => {
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
 	});
 };
 
+/**
+ * 生成AI项目
+ */
 const generateAIProject = () => {
 	ElMessageBox.prompt('请输入关键词生成项目', 'AI项目生成', {
 		confirmButtonText: '确定',
@@ -176,14 +221,45 @@ const generateAIProject = () => {
 		});
 };
 
+/**
+ * 处理导入专家信息
+ * @param {File} file - 导入的文件
+ */
+const handleImportExpert = async (file) => {
+	console.log(file);
+	ElMessage.info('正在导入信息');
+	const formData = new FormData();
+	formData.append('file', file);
+	const response = await projectApi.importProjectApi(formData);
+	if (response.code === 200) {
+		getAllProjects();
+		ElMessage.success('导入成功');
+	} else {
+		ElMessage.error(response.msg);
+		downloadErrorFile(response.msg);
+	}
+	return false;
+};
+/**
+ * 导入成功处理
+ * @param {Object} response - 导入响应
+ */
 function handleImportSuccess(response) {
 	this.$message.success(`成功导入 ${response.count} 条数据`);
 	this.getAllProjects();
 }
+/**
+ * 导入错误处理
+ * @param {Error} error - 错误对象
+ */
 function handleImportError(error) {
 	this.$message.error('导入失败：' + (error.message || '未知错误'));
 }
 
+/**
+ * 查看项目详情
+ * @param {Object} project - 项目对象
+ */
 const viewProject = (project) => {
 	ElMessageBox.alert(
 		`
@@ -207,6 +283,10 @@ const viewProject = (project) => {
 };
 let isRedact = ref(false);
 let currentProjectId = ref(null);
+/**
+ * 编辑项目
+ * @param {Object} project - 要编辑的项目对象
+ */
 const editProject = (project) => {
 	console.log(project);
 	dialogVisible.value = true;
@@ -220,6 +300,9 @@ const editProject = (project) => {
 	newProject.projectDescription = project.projectDescription;
 	newProject.projectKeywords = project.projectKeywords;
 };
+/**
+ * 更新项目
+ */
 const updateProject = async () => {
 	let res = await projectApi
 		.updateProjectApi({
@@ -233,6 +316,11 @@ const updateProject = async () => {
 	dialogVisible.value = false;
 };
 
+/**
+ * 获取标签类型
+ * @param {string} category - 项目类别
+ * @returns {string} 标签类型
+ */
 const getTagType = (category) => {
 	const typeMap = {
 		学生项目: 'success',
@@ -243,33 +331,48 @@ const getTagType = (category) => {
 	};
 	return typeMap[category] || '';
 };
-
-const downloadTemplate = () => {
-	const link = document.createElement('a');
-	link.href = '/导入模板.xlsx';
-	link.download = 'project_template.xlsx';
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
+import { handleDownload } from '../utils';
+/**
+ * 下载模板
+ */
+const downloadTemplate = async () => {
+	let res = await projectApi.downloadTemplateApi();
+	handleDownload(res.data, 'project_template.xlsx');
 };
+let tableLoading = ref(false);
 
-onMounted(() => {
-	getAllProjects();
-});
+// 新增自定义指令
+const vCheckOverflow = {
+	mounted(el, { value }) {
+		const check = () => {
+			const isOverflow = el.scrollHeight > el.clientHeight;
+			value(isOverflow);
+		};
+		check();
+		// 可选：监听元素变化重新检测
+		new ResizeObserver(check).observe(el);
+	},
+};
 </script>
 
 <template>
 	<div class="project-library-container">
 		<h1 class="title">项目库</h1>
 		<div class="button-group">
-			<el-button type="primary" @click="showProjectDialog"
+			<el-button
+				type="primary"
+				@click="showProjectDialog"
+				v-permission="'project_add_project'"
 				>新增项目</el-button
 			>
 			<el-upload
-				action="/api/project/import"
-				:show-file-list="false"
+				action="#"
+				:show-file-list="true"
+				:before-upload="handleImportExpert"
 				:on-success="handleImportSuccess"
 				:on-error="handleImportError"
+				accept=".xlsx, .xls"
+				v-permission="'project_import_excel'"
 			>
 				<el-button type="warning">导入Excel</el-button>
 			</el-upload>
@@ -277,16 +380,19 @@ onMounted(() => {
 				type="success"
 				class="button-item"
 				@click="generateAIProject"
+				v-permission="'project_ai'"
 				>AI生成项目</el-button
 			>
-			<el-button type="info" @click="downloadTemplate"
+			<el-button
+				type="info"
+				@click="downloadTemplate"
+				v-permission="'project_template'"
 				>下载模板</el-button
 			>
 		</div>
-
 		<div class="search-container">
 			<el-input
-				v-model="searchKeyword"
+				v-model="params.keyword"
 				placeholder="请输入关键词"
 				clearable
 				class="input-item"
@@ -294,22 +400,30 @@ onMounted(() => {
 			</el-input>
 
 			<el-select
-				v-model="searchCategory"
+				v-model="params.category"
 				placeholder="项目类型"
 				clearable
 				class="input-item"
 			>
-				<el-option label="学生项目" value="学生项目"></el-option>
-				<el-option label="教师项目" value="教师项目"></el-option>
-				<el-option label="企业项目" value="企业项目"></el-option>
-				<el-option label="成果转化" value="成果转化"></el-option>
-				<el-option label="AI生成" value="AI生成"></el-option>
+				<el-option
+					v-for="item in categoryOptions"
+					:label="item"
+					:value="item"
+				></el-option>
 			</el-select>
 
 			<el-button type="primary" @click="searchProjects">搜索</el-button>
 		</div>
 
-		<el-table :data="projects" style="width: 100%" border stripe>
+		<el-table
+			:data="projects"
+			style="width: 100%"
+			:height="tableHeight"
+			v-loading="tableLoading"
+			border
+			stripe
+			lazy
+		>
 			<el-table-column
 				label="序号"
 				width="60"
@@ -328,19 +442,30 @@ onMounted(() => {
 				align="center"
 			></el-table-column>
 
-			<el-table-column prop="projectName" label="项目名称">
+			<el-table-column
+				prop="projectName"
+				label="项目名称"
+				min-width="200"
+			>
 				<template #default="{ row }">
 					<div>
-						{{ row.projectName }}
-						<el-tag size="mini" style="margin-left: 5px">{{
-							row.category
-						}}</el-tag>
-						<el-tag
-							size="mini"
-							type="success"
-							v-if="row.isAiGenerated"
-							>AI生成</el-tag
+						<el-tooltip
+							:content="row.projectName"
+							placement="top-start"
+							:disabled="!row.isOverflow"
 						>
+							<div class="project-info">
+								<div
+									class="project-name"
+									v-check-overflow="
+										(val) => (row.isOverflow = val)
+									"
+								>
+									{{ row.projectName }}
+								</div>
+								<!-- 其他标签 -->
+							</div>
+						</el-tooltip>
 					</div>
 				</template>
 			</el-table-column>
@@ -348,7 +473,7 @@ onMounted(() => {
 			<el-table-column
 				prop="category"
 				label="项目类型"
-				width="120"
+				width="100"
 				header-align="center"
 				align="center"
 			>
@@ -374,21 +499,6 @@ onMounted(() => {
 				align="center"
 			></el-table-column>
 
-			<!-- <el-table-column prop="projectDescription" label="项目描述">
-				<template #default="{ row }">
-					<el-tooltip
-						class="item"
-						effect="dark"
-						:content="row.projectDescription"
-						placement="top-start"
-					>
-						<div class="description-cell">
-							{{ row.projectDescription }}
-						</div>
-					</el-tooltip>
-				</template>
-			</el-table-column> -->
-
 			<el-table-column
 				prop="projectKeywords"
 				label="关键词"
@@ -397,7 +507,7 @@ onMounted(() => {
 				align="center"
 			>
 				<template #default="{ row }">
-					<el-tag size="mini" v-if="row.projectKeywords">{{
+					<el-tag size="small" v-if="row.projectKeywords">{{
 						row.projectKeywords
 					}}</el-tag>
 				</template>
@@ -406,7 +516,7 @@ onMounted(() => {
 			<el-table-column
 				prop="initiationDate"
 				label="创建时间"
-				width="160"
+				width="120"
 				header-align="center"
 				align="center"
 			>
@@ -416,28 +526,29 @@ onMounted(() => {
 			</el-table-column>
 			<el-table-column
 				label="操作"
-				width="180"
+				width="140"
 				fixed="right"
 				header-align="center"
 				align="center"
 			>
 				<template #default="{ row }">
-					<el-button
-						type="text"
-						size="small"
-						@click="viewProject(row)"
+					<el-button link size="small" @click="viewProject(row)"
 						>查看</el-button
 					>
-					<el-button
-						type="text"
-						size="small"
-						@click="editProject(row)"
+					<el-button link size="small" @click="editProject(row)"
 						>编辑</el-button
 					>
 				</template>
 			</el-table-column>
 		</el-table>
-
+		<el-pagination
+			:current-page="params.pageNum"
+			:page-size="params.pageSize"
+			:total="params.total"
+			@current-change="handlePageChange"
+			layout="total, prev, pager, next, jumper"
+			class="pagination"
+		></el-pagination>
 		<el-dialog title="新增项目" v-model="dialogVisible">
 			<el-form :model="newProject" label-width="100px">
 				<el-form-item label="项目名称">
@@ -532,5 +643,23 @@ onMounted(() => {
 }
 .el-tag {
 	margin-right: 5px;
+}
+.pagination {
+	margin-top: 20px;
+	display: flex;
+	justify-content: center;
+}
+.project-info {
+	/* display: flex; */
+	align-items: flex-start;
+}
+
+.project-name {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 3; /* 超过3行显示省略号 */
+	-webkit-box-orient: vertical;
 }
 </style>

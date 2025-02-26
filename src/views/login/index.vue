@@ -287,7 +287,7 @@ onMounted(() => {
 			<!-- 注册表单 -->
 			<form v-else @submit.prevent="handleRegister" class="login-form">
 				<div class="form-group">
-					<label for="register-username">注册用户名</label>
+					<label for="register-username">学号/工号</label>
 					<input
 						type="text"
 						id="register-username"
@@ -300,7 +300,7 @@ onMounted(() => {
 				</div>
 
 				<div class="form-group">
-					<label for="register-password">注册密码</label>
+					<label for="register-password">密码</label>
 					<input
 						type="password"
 						id="register-password"
