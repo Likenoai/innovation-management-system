@@ -507,14 +507,6 @@ const resetPassword = async (row, type) => {
 							>
 								重置密码
 							</el-button>
-							<!-- <el-button
-								type="primary"
-								size="small"
-								@click="deleteExpert(scope.row)"
-								text
-							>
-								删除
-							</el-button> -->
 						</template>
 					</el-table-column>
 				</el-table>
@@ -731,18 +723,6 @@ const resetPassword = async (row, type) => {
 						header-align="center"
 					/>
 					<el-table-column
-						prop="createTime"
-						label="创建时间"
-						align="center"
-						header-align="center"
-					/>
-					<el-table-column
-						prop="updateTime"
-						label="更新时间"
-						align="center"
-						header-align="center"
-					/>
-					<el-table-column
 						prop="action"
 						label="操作"
 						align="center"
@@ -758,14 +738,6 @@ const resetPassword = async (row, type) => {
 							>
 								重置密码
 							</el-button>
-							<!-- <el-button
-								type="primary"
-								size="small"
-								@click="deleteTeacher(scope.row)"
-								text
-							>
-								删除
-							</el-button> -->
 						</template>
 					</el-table-column>
 				</el-table>

@@ -7,48 +7,67 @@ import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
 import gsap from 'gsap';
+
+// 登录参数
 const loginParam = ref({
 	account: '',
 	password: '',
 });
 
-const isLoginMode = ref(true);
+const isLoginMode = ref(true); //切换登录和注册
+
+// 注册参数
 const registerParam = ref({
 	username: '',
 	password: '',
 	confirmPassword: '',
 	role: '6', // 默认身份为学生
 });
-const router = useRouter();
-const loginStore = useMyLoginStore();
+const router = useRouter(); // 实例化路由
+const loginStore = useMyLoginStore(); // 获取登录仓库
+
+import { Validator, Validators } from '../utils';
+
+const rules = [
+	{
+		field: 'username',
+		validate: Validators.required,
+		message: '用户名不能为空',
+	},
+	{
+		field: 'password',
+		validate: Validators.required,
+		message: '密码不能为空',
+	},
+];
+const loginValidator = ref(new Validator(rules));
+loginValidator.value.validate(loginParam.value);
+console.log(
+	'loginValidator.validate(loginParam.value);:',
+	loginValidator.value.validate(loginParam.value)
+);
 // 处理登录
 async function handleLogin() {
 	let isPass = await checkCode();
 	console.log(isPass);
 	if (isPass != null && isPass) {
-		// ElMessage.success('验证码成功');
 	} else {
 		ElMessage.error('验证码错误');
 		return;
 	}
-
 	try {
 		const response = await loginApi({
 			...loginParam.value,
 		}).then(async (loginData) => {
-			// console.log(loginData);
 			let res = await getRoleApi(loginData.data.roleId).then(
 				(permissionData) => {
 					loginStore.permissions = permissionData.data.map((item) => {
 						return item.permissionCode;
 					});
-					// console.log(loginStore.permissions);
 				}
 			);
 			return loginData;
 		});
-		// console.log('response:', response);
-
 		if (response.code === 200) {
 			// 将用户信息存储到 Pinia 仓库中
 			loginStore.setUserInfo({
@@ -116,11 +135,45 @@ const handleBlur = (e) => {
 	}
 };
 
+import * as verifyApi from '@/api/verifyApi.js';
+
+let base64Image = ref();
+let vrf = ref();
+let imagesId = ref();
+let isPass = ref(false);
+const getCode = async () => {
+	let res = await verifyApi.getCodeApi();
+	console.log(res);
+	base64Image.value = res.data.base64;
+	imagesId.value = res.data.id;
+};
+const checkCode = async () => {
+	let res = await verifyApi.checkCodeApi({
+		id: imagesId.value,
+		text: vrf.value,
+	});
+	console.log(res);
+	isPass.value = res.data;
+	return res.data;
+};
+const checkStaff = async () => {
+	let res = await verifyApi.checkStaffApi({
+		account: registerParam.value.username,
+		type: registerParam.value.role == '6' ? '0' : '1',
+	});
+	return res.data;
+};
+onMounted(() => {
+	getCode();
+});
+
+// 3D背景S
 // 初始化3D背景
 onMounted(() => {
 	initThreeBackground();
 });
 
+// 3D背景
 function initThreeBackground() {
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera(
@@ -185,38 +238,7 @@ function initThreeBackground() {
 
 	animate();
 }
-
-import * as verifyApi from '@/api/verifyApi.js';
-
-let base64Image = ref();
-let vrf = ref();
-let imagesId = ref();
-let isPass = ref(false);
-const getCode = async () => {
-	let res = await verifyApi.getCodeApi();
-	console.log(res);
-	base64Image.value = res.data.base64;
-	imagesId.value = res.data.id;
-};
-const checkCode = async () => {
-	let res = await verifyApi.checkCodeApi({
-		id: imagesId.value,
-		text: vrf.value,
-	});
-	console.log(res);
-	isPass.value = res.data;
-	return res.data;
-};
-const checkStaff = async () => {
-	let res = await verifyApi.checkStaffApi({
-		account: registerParam.value.username,
-		type: registerParam.value.role == '6' ? '0' : '1',
-	});
-	return res.data;
-};
-onMounted(() => {
-	getCode();
-});
+// 3D背景E
 </script>
 
 <template>
@@ -255,7 +277,6 @@ onMounted(() => {
 					/>
 					<div class="input-line"></div>
 				</div>
-
 				<div class="form-group">
 					<label for="password">密码</label>
 					<input

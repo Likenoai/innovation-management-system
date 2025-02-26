@@ -47,6 +47,10 @@ const categoryOptions = [
 	'成果转化',
 	'AI生成',
 ];
+// 处理项目类型清空
+const handleClear = () => {
+	params.value.category = '';
+};
 
 /**
  * 获取所有项目
@@ -404,6 +408,7 @@ const vCheckOverflow = {
 				placeholder="项目类型"
 				clearable
 				class="input-item"
+				@clear="handleClear"
 			>
 				<el-option
 					v-for="item in categoryOptions"

@@ -6,10 +6,13 @@ import {
 	deletePowerApi,
 	addPowerApi,
 	getRoleApi,
+	deletePermissionApi,
+	updatePermissionApi,
 } from '@/api/permissionApi.js';
 import { getAllRoleApi, addRoleApi } from '@/api/roleApi.js';
 import { handleTableHeight } from '../utils';
 import { useMyLoginStore } from '../stores/myLoginStore';
+import { ElMessage } from 'element-plus';
 const permissionsData = ref([]);
 console.clear();
 
@@ -74,28 +77,34 @@ const showEditPermissionDialog = (permission) => {
 };
 const addPower = async (permissionId) => {
 	// 为角色添加权限并刷新权限列表
-	let res = await addPowerApi({
+	await addPowerApi({
 		roleId: currentRole.value.roleId,
 		permissionId,
 	}).then(async (item) => {
+		ElMessage.success('添加用户权限成功');
 		await getRole();
 		return item;
 	});
-	console.log();
-	console.log('res:', res);
 };
 const deletePower = async (permissionId) => {
 	// 为角色删除权限并刷新权限列表
 	let res = await deletePowerApi({
 		roleId: currentRole.value.roleId,
 		permissionId,
-	}).then((item) => {
-		console.log(item);
+	}).then(() => {
+		ElMessage.success('删除用户权限成功');
+
 		getRole();
 	});
 };
 const updatePermission = async () => {
 	// 更新权限信息
+	await updatePermissionApi({
+		...editPermission.value,
+	}).then(() => {
+		getAllPermissions();
+		ElMessage.success('更新权限成功');
+	});
 	editPermissionDialogVisible.value = false;
 };
 
@@ -104,6 +113,13 @@ const changeCurrentRoleId = (roleId: string) => {
 	console.log(roleId);
 	currentRole.value.roleId = roleId;
 	getRole();
+};
+
+const deletePermission = async (id) => {
+	await deletePermissionApi({ permissionId: id }).then(() => {
+		getAllPermissions();
+		ElMessage.success('删除权限成功');
+	});
 };
 
 const rowClassName = (row: any) => {
@@ -172,6 +188,13 @@ const rowClassName = (row: any) => {
 						size="small"
 						style="color: #3d3e83"
 						>取消</el-button
+					>
+					<el-button
+						@click="deletePermission(scope.row.permissionId)"
+						type="text"
+						size="small"
+						style="color: #3d3e83"
+						>删除</el-button
 					>
 				</template>
 			</el-table-column>
