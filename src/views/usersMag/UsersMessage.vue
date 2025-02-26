@@ -35,60 +35,65 @@ const teacherList = ref([]);
 const expertList = ref([]);
 const managerList = ref([]);
 
+// 封装的错误处理函数
+const handleApiCall = async (apiCall, params) => {
+	try {
+		return await apiCall(params); // 调用 API
+	} catch (error) {
+		if (error.status === 401) {
+			ElMessage.error('缺少权限');
+		} else {
+			ElMessage.error('请求失败: ' + error.message);
+		}
+		throw error; // 抛出错误以便后续处理
+	}
+};
+
 // 获取基础数据
 const getManagerList = async () => {
-	try {
-		const response = await staffApi.getManagersApi({
-			...managerListParams.value,
-		}); // 调用 API 获取学生列表
-		console.log(response);
+	const response = await handleApiCall(staffApi.getManagersApi, {
+		...managerListParams.value,
+	});
+	if (response) {
 		managerList.value = response.data.recordList;
 		managerListParams.value.total = response.data.total;
-	} catch (error) {
-		ElMessage.error('获取学生列表失败: ' + error.message);
 	}
 };
+
 const getStudentList = async () => {
-	try {
-		const response = await staffApi.getStudentsApi({
-			...studentListParams.value,
-		}); // 调用 API 获取学生列表
+	const response = await handleApiCall(staffApi.getStudentsApi, {
+		...studentListParams.value,
+	});
+	if (response) {
 		studentList.value = response.data.recordList;
 		studentListParams.value.total = response.data.total;
-	} catch (error) {
-		ElMessage.error('获取学生列表失败: ' + error.message);
 	}
 };
+
 const getExpertList = async () => {
-	try {
-		const response = await staffApi.getExpertsApi({
-			...expertListParams.value,
-		}); // 调用 API 获取学生列表
-		if (response.data && response.code === 200) {
-			expertList.value = response.data.recordList; // 更新专家列表
-			expertListParams.value.total = response.data.total;
-		} else {
-			ElMessage.error('获取专家列表失败: ' + response.data.msg);
-		}
-	} catch (error) {
-		ElMessage.error('获取专家列表失败: ' + error.message);
+	const response = await handleApiCall(staffApi.getExpertsApi, {
+		...expertListParams.value,
+	});
+	if (response) {
+		expertList.value = response.data.recordList;
+		expertListParams.value.total = response.data.total;
+	} else {
+		ElMessage.error('获取专家列表失败');
 	}
 };
+
 const getTeacherList = async () => {
-	try {
-		const response = await staffApi.getTeachersApi({
-			...teacherListParams.value,
-		}); // 调用 API 获取学生列表
-		if (response.data && response.code === 200) {
-			teacherList.value = response.data.recordList; // 更新专家列表
-			teacherListParams.value.total = response.data.total;
-		} else {
-			ElMessage.error('获取教师列表失败: ' + response.data.msg);
-		}
-	} catch (error) {
-		ElMessage.error('获取教师列表失败: ' + error.message);
+	const response = await handleApiCall(staffApi.getTeachersApi, {
+		...teacherListParams.value,
+	});
+	if (response) {
+		teacherList.value = response.data.recordList;
+		teacherListParams.value.total = response.data.total;
+	} else {
+		ElMessage.error('获取教师列表失败');
 	}
 };
+
 /**
  * 处理当前页码变化
  *

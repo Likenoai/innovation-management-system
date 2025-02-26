@@ -9,7 +9,7 @@ export const menuConfig = [
 		path: '/permission',
 		title: '权限管理',
 
-		// permission: 'view_permission',
+		permission: 'view_permission',
 	},
 	// {
 	// 	path: '/competitions',
