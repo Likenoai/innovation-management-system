@@ -9,40 +9,37 @@ const router = createRouter({
 });
 
 // // 路由守卫
-// router.beforeEach((to, from, next) => {
-// 	const loginStore = useMyLoginStore();
-// 	const token = loginStore.token;
-// 	const permissions = loginStore.permissions;
+router.beforeEach((to, from, next) => {
+	const loginStore = useMyLoginStore();
+	const token = loginStore.token;
+	const permissions = loginStore.permissions;
 
-// 	// console.log('router token:', token);
-// 	// console.log('loginStore.role:', loginStore.role);
+	if (to.path === '/login') {
+		if (token) {
+			next('/');
+		} else {
+			next();
+		}
+		return;
+	}
 
-// 	if (to.path === '/login') {
-// 		if (token) {
-// 			next('/');
-// 		} else {
-// 			next();
-// 		}
-// 		return;
-// 	}
+	if (to.matched.some((record) => record.meta.requiresAuth)) {
+		if (!token) {
+			next('/login');
+			return;
+		}
 
-// 	if (to.matched.some((record) => record.meta.requiresAuth)) {
-// 		if (!token) {
-// 			next('/login');
-// 			return;
-// 		}
+		// 检查权限
+		if (to.meta.permission) {
+			if (!permissions || !permissions.includes(to.meta.permission)) {
+				ElMessage.error('没有访问权限');
+				next(false);
+				return;
+			}
+		}
+	}
 
-// 		// 检查权限
-// 		if (to.meta.permission) {
-// 			if (!permissions || !permissions.includes(to.meta.permission)) {
-// 				ElMessage.error('没有访问权限');
-// 				next(false);
-// 				return;
-// 			}
-// 		}
-// 	}
-
-// 	next();
-// });
+	next();
+});
 
 export default router;

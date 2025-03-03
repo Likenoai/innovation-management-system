@@ -54,7 +54,7 @@ watch(visibleRef, (newVal) => {
 	</el-card>
 </template>
 
-<style scoped>
+<style scoped lang="less">
 .show-flex {
 	flex: 1;
 }

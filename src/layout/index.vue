@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="jsx">
 import {
 	ref,
 	computed,
@@ -19,9 +19,7 @@ const loginStore = useMyLoginStore();
 const router = useRouter();
 const route = useRoute();
 const isCollapse = ref(false);
-const username = ref(loginStore.userName || '用户');
-
-// 添加侧边栏显示状态控制
+const userInfo = ref(loginStore.userInfo);
 const isAsideVisible = ref(true);
 
 const toggleAside = () => {
@@ -65,9 +63,13 @@ const authorizedMenus = ref(filterMenus(menuConfig));
 
 // 优化登出逻辑
 const handleLogout = () => {
-	loginStore.logout();
-	localStorage.removeItem('token');
-	router.push('/login');
+	ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+		type: 'warning',
+	}).then(() => {
+		loginStore.logout();
+		localStorage.removeItem('token');
+		router.push('/login');
+	});
 };
 
 // 获取当前激活的菜单
@@ -118,6 +120,7 @@ const roleLabelMap = {
 	school_admin: '校级管理员',
 };
 import { rolePermissions } from '@/config/permissions';
+import { ElMessageBox } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 
@@ -130,11 +133,40 @@ watch(selectedRole, (newRole) => {
 	proxy.$forceUpdate();
 });
 
+let dialogVisible = ref(false);
+const handelInfo = () => {
+	console.log('userInfo:', dialogVisible);
+	dialogVisible.value = true;
+};
+// 格式化字段标签
+function formatLabel(key) {
+	const labels = {
+		id: 'ID',
+		account: '账号',
+		name: '姓名',
+		personnelCode: '人员编号',
+		college: '学院',
+		subject: '学科',
+		unit: '单位',
+		schoolFlag: '学校标识',
+		studentFlag: '学生标识',
+		role: '角色',
+	};
+	return labels[key] || key;
+}
+
+// 格式化字段值
+function formatValue(value) {
+	if (typeof value === 'boolean' || typeof value === 'number') {
+		return value.toString();
+	}
+	return value || '无';
+}
 // 处理命令
 const handleCommand = (command) => {
 	switch (command) {
 		case 'profile':
-			router.push('/profile');
+			handelInfo();
 			break;
 		case 'logout':
 			handleLogout();
@@ -251,7 +283,7 @@ onBeforeUnmount(() => {
 				<div class="header-right">
 					<el-dropdown @command="handleCommand">
 						<span class="user-info">
-							{{ username }}
+							{{ userInfo.name || '用户' }}
 							<el-icon><CaretBottom /></el-icon>
 						</span>
 						<template #dropdown>
@@ -262,9 +294,9 @@ onBeforeUnmount(() => {
 								<el-dropdown-item command="logout"
 									>退出登录</el-dropdown-item
 								>
-								<el-dropdown-item command="roleSwitch"
+								<!-- <el-dropdown-item command="roleSwitch"
 									>角色切换</el-dropdown-item
-								>
+								> -->
 							</el-dropdown-menu>
 						</template>
 					</el-dropdown>
@@ -294,6 +326,58 @@ onBeforeUnmount(() => {
 			</el-radio-group>
 		</el-dialog>
 	</el-container>
+	<!-- 用户信息对话框 -->
+	<el-dialog title="用户信息" v-model="dialogVisible" width="500px" center>
+		<el-form label-width="100px">
+			<!-- 姓名 -->
+			<el-form-item label="姓名：">
+				<span>{{ userInfo.name || '暂无' }}</span>
+			</el-form-item>
+
+			<!-- 账号 -->
+			<el-form-item label="账号：">
+				<span>{{ userInfo.account || '暂无' }}</span>
+			</el-form-item>
+
+			<!-- 学院 -->
+			<el-form-item label="学院：">
+				<span>{{ userInfo.college || '暂无' }}</span>
+			</el-form-item>
+
+			<!-- 所属单位 -->
+			<el-form-item label="所属单位：">
+				<span>{{ userInfo.unit || '暂无' }}</span>
+			</el-form-item>
+
+			<!-- 学科 -->
+			<el-form-item label="学科：">
+				<span>{{ userInfo.subject || '暂无' }}</span>
+			</el-form-item>
+
+			<!-- 人员类型 -->
+			<el-form-item label="人员类型：">
+				<span>
+					{{ userInfo.studentFlag === 1 ? '学生' : '非学生' }} /
+					{{ userInfo.schoolFlag === 1 ? '校内' : '校外' }}
+				</span>
+			</el-form-item>
+
+			<!-- 人员编号 -->
+			<el-form-item label="人员编号：">
+				<span>{{ userInfo.personnelCode || '暂无' }}</span>
+			</el-form-item>
+		</el-form>
+
+		<span
+			slot="footer"
+			class="dialog-footer"
+			style="display: flex; justify-content: center"
+		>
+			<el-button @click="dialogVisible = false" type="primary" plain
+				>关 闭</el-button
+			>
+		</span>
+	</el-dialog>
 </template>
 <style scoped lang="less">
 .layout-container {

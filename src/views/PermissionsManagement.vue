@@ -114,11 +114,17 @@ const changeCurrentRoleId = (roleId: string) => {
 	currentRole.value.roleId = roleId;
 	getRole();
 };
-
+import { ElMessageBox } from 'element-plus';
 const deletePermission = async (id) => {
-	await deletePermissionApi({ permissionId: id }).then(() => {
-		getAllPermissions();
-		ElMessage.success('删除权限成功');
+	ElMessageBox.confirm('此操作将永久删除该权限, 是否继续?', '提示', {
+		confirmButtonText: '确定',
+		cancelButtonText: '取消',
+		type: 'warning',
+	}).then(() => {
+		deletePermissionApi({ permissionId: id }).then(() => {
+			getAllPermissions();
+			ElMessage.success('删除权限成功');
+		});
 	});
 };
 

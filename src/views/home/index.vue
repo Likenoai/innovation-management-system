@@ -81,7 +81,7 @@ const animateNumbers = () => {
 		<!-- 主要内容 -->
 		<div class="content">
 			<div class="hero-section">
-				<h1 class="title">创新竞赛管理平台</h1>
+				<h1 class="title">德州学院创新创业教育数智化平台</h1>
 				<p class="subtitle">激发创新 • 追求卓越 • 成就未来</p>
 			</div>
 

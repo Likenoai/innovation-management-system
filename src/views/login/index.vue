@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { getInfoApi } from '@/api/staffApi.js';
 
 // 登录参数
 const loginParam = ref({
@@ -51,6 +52,7 @@ async function handleLogin() {
 	let isPass = await checkCode();
 	console.log(isPass);
 	if (isPass != null && isPass) {
+		getCode();
 	} else {
 		ElMessage.error('验证码错误');
 		return;
@@ -59,6 +61,10 @@ async function handleLogin() {
 		const response = await loginApi({
 			...loginParam.value,
 		}).then(async (loginData) => {
+			if (loginData.code !== 200) {
+				ElMessage.error(loginData.msg);
+				return;
+			}
 			let res = await getRoleApi(loginData.data.roleId).then(
 				(permissionData) => {
 					loginStore.permissions = permissionData.data.map((item) => {
@@ -66,13 +72,22 @@ async function handleLogin() {
 					});
 				}
 			);
+
 			return loginData;
 		});
 		if (response.code === 200) {
 			// 将用户信息存储到 Pinia 仓库中
-			loginStore.setUserInfo({
-				...response.data,
-			});
+			await loginStore
+				.setUserInfo({
+					...response.data,
+				})
+				.then(() => {
+					getInfoApi().then((infoData) => {
+						loginStore.setDetailUserInfo({
+							...infoData.data,
+						});
+					});
+				});
 			// loginStore.logSelt();
 			ElMessage.success('登录成功');
 			router.push('/');
@@ -81,7 +96,6 @@ async function handleLogin() {
 		}
 	} catch (error) {
 		console.error('登录错误:', error);
-		ElMessage.error('登录失败: ' + error.message);
 	}
 }
 
@@ -369,7 +383,7 @@ function initThreeBackground() {
 	</div>
 </template>
 
-<style scoped>
+<style scoped lang="less">
 .login-container {
 	color: #1a85ef;
 	position: relative;

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 import path from 'path';
 
 // 定义常量
@@ -16,13 +17,14 @@ export default defineConfig({
 			'@': path.resolve(__dirname, './src'),
 		},
 	},
-	plugins: [vue()],
+	plugins: [vue(), vueJsx()],
 	server: {
 		open: true, // 运行时自动在浏览器打开
 		port: 8800,
 		proxy: {
 			'/api': {
 				target: SERVER_URL,
+				// target: SERVER_URL2, //构建地址
 				rewrite: (path) => path.replace(/^\/api/, ''),
 			},
 		},

@@ -2,9 +2,18 @@ import axios from 'axios';
 import { withErrorHandling } from './uitls';
 
 // 获取学生列表
-const getStudentsApiFunction = async ({ pageNum, pageSize }) => {
+const getStudentsApiFunction = async ({
+	pageNum,
+	pageSize,
+	college,
+	name,
+	studentId,
+	majorName,
+	grade,
+	educationLevel,
+}) => {
 	let res = await axios.get(
-		`/api/staff/getStudents?pageNum=${pageNum}&pageSize=${pageSize}`,
+		`/api/staff/getStudents?pageNum=${pageNum}&college=${college}&name=${name}&studentId=${studentId}&majorName=${majorName}&grade=${grade}&educationLevel=${educationLevel}&pageSize=${pageSize}`,
 		{
 			headers: {
 				'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
@@ -16,9 +25,15 @@ const getStudentsApiFunction = async ({ pageNum, pageSize }) => {
 export const getStudentsApi = withErrorHandling(getStudentsApiFunction);
 
 // 获取教师列表
-const getTeachersApiFunction = async ({ pageNum, pageSize }) => {
+const getTeachersApiFunction = async ({
+	pageNum,
+	pageSize,
+	personnelCode,
+	name,
+	currentUnit,
+}) => {
 	let res = await axios.get(
-		`/api/staff/getTeachers?pageNum=${pageNum}&pageSize=${pageSize}`,
+		`/api/staff/getTeachers?pageNum=${pageNum}&pageSize=${pageSize}&personnelCode=${personnelCode}&name=${name}&currentUnit=${currentUnit}`,
 		{
 			headers: {
 				'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
@@ -82,3 +97,25 @@ const resetPasswordApiFunction = async ({ id, type }) => {
 	return res;
 };
 export const resetPasswordApi = withErrorHandling(resetPasswordApiFunction);
+
+// 所有学生的学院
+const getStuCollegesApiFunction = async () => {
+	let res = await axios.get('/api/staff/stuColleges', {
+		headers: {
+			'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
+		},
+	});
+	return res;
+};
+export const getStuCollegesApi = withErrorHandling(getStuCollegesApiFunction);
+
+// 用户详情
+const getInfoApiFunction = async () => {
+	let res = await axios.get('/api/staff/info', {
+		headers: {
+			'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
+		},
+	});
+	return res;
+};
+export const getInfoApi = withErrorHandling(getInfoApiFunction);
