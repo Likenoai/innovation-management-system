@@ -555,13 +555,13 @@ let tableLoading = ref(false);
 						<el-tooltip
 							:content="row.projectKeywords"
 							placement="top-start"
-							:disabled="!row.isOverflow"
+							:disabled="!row.isKeyOverflow"
 						>
 							<div class="project-info">
 								<div
 									class="project-name-keywords"
 									v-width-overflow="
-										(val) => (row.isOverflow = val)
+										(val) => (row.isKeyOverflow = val)
 									"
 								>
 									<el-tag
