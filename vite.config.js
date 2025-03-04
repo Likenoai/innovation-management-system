@@ -9,24 +9,28 @@ const MOCK_URL = 'http://127.0.0.1:4523/m1/5414981-0-default';
 const LLS_URL = 'http://192.168.1.36:8080';
 const SERVER_URL = 'http://192.168.177.23:9999';
 const SERVER_URL2 = 'http://192.168.177.23:80';
-// /web/java11/scgl-server-0.0.1-SNAPSHOT.jar
-// https://vite.dev/config/
-export default defineConfig({
+
+// 提取公共配置
+const commonConfig = {
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src'),
 		},
 	},
 	plugins: [vue(), vueJsx()],
-	server: {
-		open: true, // 运行时自动在浏览器打开
-		port: 8800,
-		proxy: {
-			'/api': {
-				target: SERVER_URL,
-				// target: SERVER_URL2, //构建地址
-				rewrite: (path) => path.replace(/^\/api/, ''),
+};
+
+export default defineConfig(({ command }) => {
+	return {
+		...commonConfig,
+		server: {
+			open: true, // 运行时自动在浏览器打开
+			port: 8800,
+			proxy: {
+				'/api': {
+					target: command === 'serve' ? SERVER_URL : SERVER_URL2,
+				},
 			},
 		},
-	},
+	};
 });
