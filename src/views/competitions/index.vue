@@ -646,7 +646,7 @@ const formatValue = (value, prop, index) => {
 			/>
 			<el-table-column label="操作" width="80" fixed="right">
 				<template #default="scope">
-					<el-button type="text" @click="showDetails(scope.row)"
+					<el-button link @click="showDetails(scope.row)"
 						>详情</el-button
 					>
 				</template>

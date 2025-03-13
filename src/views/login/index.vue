@@ -8,7 +8,7 @@ import { useMyLoginStore } from '@/stores/myLoginStore.js';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { getInfoApi } from '@/api/staffApi.js';
-
+import * as verifyApi from '@/api/verifyApi.js';
 // 登录参数
 const loginParam = ref({
 	account: '',
@@ -65,14 +65,6 @@ async function handleLogin() {
 				ElMessage.error(loginData.msg);
 				return;
 			}
-			let res = await getRoleApi(loginData.data.roleId).then(
-				(permissionData) => {
-					loginStore.permissions = permissionData.data.map((item) => {
-						return item.permissionCode;
-					});
-				}
-			);
-
 			return loginData;
 		});
 		if (response.code === 200) {
@@ -82,13 +74,21 @@ async function handleLogin() {
 					...response.data,
 				})
 				.then(() => {
-					getInfoApi().then((infoData) => {
-						loginStore.setDetailUserInfo({
-							...infoData.data,
-						});
+					return getInfoApi();
+				})
+				.then((infoData) => {
+					return loginStore.setDetailUserInfo({
+						...infoData.data,
+					});
+				})
+				.then(() => {
+					return getRoleApi(response.data.roleId);
+				})
+				.then((permissionData) => {
+					loginStore.permissions = permissionData.data.map((item) => {
+						return item.permissionCode;
 					});
 				});
-			// loginStore.logSelt();
 			ElMessage.success('登录成功');
 			router.push('/');
 		} else {
@@ -101,6 +101,7 @@ async function handleLogin() {
 
 async function handleRegister() {
 	let isPass = await checkStaff();
+	console.log('isPass:', isPass);
 	if (isPass == null) {
 		ElMessage.error('用户名错误');
 		return;
@@ -109,6 +110,7 @@ async function handleRegister() {
 		ElMessage.error('两次输入的密码不一致');
 		return;
 	}
+	checkStaffApi;
 	try {
 		const response = await addApi({
 			...registerParam.value,
@@ -148,8 +150,6 @@ const handleBlur = (e) => {
 		});
 	}
 };
-
-import * as verifyApi from '@/api/verifyApi.js';
 
 let base64Image = ref();
 let vrf = ref();
@@ -282,7 +282,7 @@ function initThreeBackground() {
 				<div class="form-group">
 					<label for="username">用户名</label>
 					<input
-						type="text"
+						link
 						id="username"
 						v-model="loginParam.account"
 						required
@@ -305,11 +305,7 @@ function initThreeBackground() {
 				</div>
 
 				<div class="form-group verification-wrapper">
-					<input
-						type="text"
-						v-model="vrf"
-						style="margin-right: 10px"
-					/>
+					<input link v-model="vrf" style="margin-right: 10px" />
 					<img :src="base64Image" alt="" @click="getCode" />
 				</div>
 
@@ -324,7 +320,7 @@ function initThreeBackground() {
 				<div class="form-group">
 					<label for="register-username">学号/工号</label>
 					<input
-						type="text"
+						link
 						id="register-username"
 						v-model="registerParam.username"
 						required

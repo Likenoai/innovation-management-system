@@ -1,0 +1,33 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 4843349 */
+  src: url('iconfont.svg?t=1741494686799#iconfont') format('svg');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-chahao1:before {
+  content: "\e604";
+}
+
+.icon-duihao2:before {
+  content: "\e69e";
+}
+
+.icon-duihao1:before {
+  content: "\e657";
+}
+
+.icon-duihao:before {
+  content: "\e633";
+}
+
+.icon-chahao:before {
+  content: "\e636";
+}
+

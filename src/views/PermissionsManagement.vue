@@ -177,27 +177,27 @@ const rowClassName = (row: any) => {
 				<template #default="scope">
 					<el-button
 						@click="showEditPermissionDialog(scope.row)"
-						type="text"
+						link
 						size="small"
 						>编辑</el-button
 					>
 					<el-button
 						@click="addPower(scope.row.permissionId)"
-						type="text"
+						link
 						size="small"
 						style="color: blue"
 						>添加</el-button
 					>
 					<el-button
 						@click="deletePower(scope.row.permissionId)"
-						type="text"
+						link
 						size="small"
 						style="color: #3d3e83"
 						>取消</el-button
 					>
 					<el-button
 						@click="deletePermission(scope.row.permissionId)"
-						type="text"
+						link
 						size="small"
 						style="color: #3d3e83"
 						>删除</el-button

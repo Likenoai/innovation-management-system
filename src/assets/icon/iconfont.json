@@ -1,0 +1,44 @@
+{
+  "id": "4843349",
+  "name": "竞赛管理项目",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "德州学院竞赛管理项目",
+  "glyphs": [
+    {
+      "icon_id": "485741",
+      "name": "叉号",
+      "font_class": "chahao1",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "1239935",
+      "name": "对号2",
+      "font_class": "duihao2",
+      "unicode": "e69e",
+      "unicode_decimal": 59038
+    },
+    {
+      "icon_id": "6536708",
+      "name": "对号",
+      "font_class": "duihao1",
+      "unicode": "e657",
+      "unicode_decimal": 58967
+    },
+    {
+      "icon_id": "925451",
+      "name": "对号",
+      "font_class": "duihao",
+      "unicode": "e633",
+      "unicode_decimal": 58931
+    },
+    {
+      "icon_id": "11483673",
+      "name": "叉号",
+      "font_class": "chahao",
+      "unicode": "e636",
+      "unicode_decimal": 58934
+    }
+  ]
+}

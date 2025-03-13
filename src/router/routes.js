@@ -12,6 +12,15 @@ const routes = [
 		redirect: '/home',
 		children: [
 			{
+				path: 'static',
+				name: 'static',
+				component: () => import('../views/StaticMge.vue'),
+				// meta: {
+				// 	requiresAuth: true,
+				// 	permission: 'view_static',
+				// },
+			},
+			{
 				path: 'permission',
 				name: 'permission',
 				component: () => import('../views/PermissionsManagement.vue'),
@@ -48,26 +57,53 @@ const routes = [
 			},
 			// Innovation Module
 			{
-				path: 'innovation',
-				name: 'Innovation',
-				component: () => import('../views/innovation/index.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_innovation_projects',
-				},
+				path: 'ai-innovation-expert-assignment',
+				name: 'Innovation-Expert-Assignment',
+				component: () =>
+					import('../views/ai-innovation/ExpertAssignment.vue'),
+			},
+			{
+				path: 'my-projects',
+				name: 'MyProjects',
+				component: () => import('../views/innovation/MyProjects.vue'),
 			},
 			{
 				// 学生上传项目
-				path: 'upload-innovation',
+				path: 'upload-innovation/:projectId?',
 				name: 'UploadInnovation',
 				component: () =>
+					import('../views/innovation/ProjectUpload.vue'),
+				// meta: {
+				// 	requiresAuth: true,
+				// 	permission: 'view_innovation_upload',
+				// },
+			},
+			{
+				path: 'college-project-settings',
+				name: 'CollegeProjectSettings',
+				component: () =>
 					import(
-						'../views/innovation/uploadInnovation/uploadInnovation.vue'
+						'../views/innovation/college-project-settings/CollegeProjectSettings.vue'
 					),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_innovation_upload',
-				},
+				redirect: '/college-project-settings/project-table-Mge',
+				children: [
+					{
+						path: 'project-table-Mge',
+						name: 'project-table-Mges',
+						component: () =>
+							import(
+								'../views/innovation/college-project-settings/ProjectTableMge.vue'
+							),
+					},
+					{
+						path: 'settings-mge',
+						name: 'settings-mges',
+						component: () =>
+							import(
+								'../views/innovation/college-project-settings/SettingsMge.vue'
+							),
+					},
+				],
 			},
 			{
 				// 设定学生提交项目信息
@@ -81,25 +117,14 @@ const routes = [
 				},
 			},
 			{
-				// 学院评审
-				path: 'college-review',
-				name: 'CollegeReview',
-				component: () =>
-					import('../views/innovation/collegeReview.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_college_review',
-				},
-			},
-			{
 				// 专家评审
 				path: 'expert-review',
 				name: 'ExpertReview',
 				component: () => import('../views/innovation/expertReview.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_expert_review',
-				},
+				// meta: {
+				// 	requiresAuth: true,
+				// 	permission: 'view_expert_review',
+				// },
 			},
 			{
 				// 分配专家

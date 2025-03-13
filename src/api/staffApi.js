@@ -119,3 +119,12 @@ const getInfoApiFunction = async () => {
 	return res;
 };
 export const getInfoApi = withErrorHandling(getInfoApiFunction);
+
+// 用户详情
+const getCollegeExpertsApiFunction = async (param) => {
+	let res = await axios.get('/api/staff/collegeExperts', param);
+	return res;
+};
+export const getCollegeExpertsApi = withErrorHandling(
+	getCollegeExpertsApiFunction
+);

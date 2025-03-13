@@ -1,3 +1,5 @@
+// 推荐省赛项目
+
 <script setup>
 import { ref, computed } from 'vue';
 import {

@@ -1,30 +1,39 @@
 <script setup>
-import { ref, computed } from 'vue';
+/*
+ * @pageInfo: 专家盲审项目
+ */
+import { ref, computed, onMounted } from 'vue';
 import { ElTable, ElTableColumn } from 'element-plus';
 import VuePdfEmbed from 'vue-pdf-embed';
-
-// 模拟生成20条项目数据
-const projects = ref(
-	Array.from({ length: 20 }, (_, index) => ({
-		id: `${index}`,
-		batch: `批次 ${index + 1}`, // 批次时间
-		projectName: `项目名称 ${index + 1}`, // 项目名称
-		projectLevel: `级别 ${
-			index % 3 === 0 ? '校级' : index % 3 === 1 ? '省级' : '国家级'
-		}`, // 项目级别
-		projectType: `类型 ${index % 2 === 0 ? '类型A' : '类型B'}`, // 项目类型
-		projectCategory: `类别 ${index % 4}`, // 项目类别
-		primaryDiscipline: `学科 ${index % 5}`, // 所属学科
-		state: 0, // 0 没有评审 1 通过评审 2 未通过评审
-	}))
-);
-
-const maxHeight = computed(() => {
-	const height = window.innerHeight;
-	return height - 260 + 'px';
+import { useDynamicHeight } from '@/utils/index.js';
+import { generateProjectData } from '@/utils/mock/exoertsAssignMock.js';
+import * as contestApi from '@/api/contestApi.js';
+import { useMyLoginStore } from '@/stores/myLoginStore.js';
+// 基础数据S
+const myLoginStore = useMyLoginStore();
+const projects = ref();
+projects.value = generateProjectData(30);
+const maxHeight = useDynamicHeight(200);
+const projectParams = ref({
+	pagnNum: 1,
+	pageSize: 10,
+	college: '',
 });
-import igpath from '@/assets/基于改进CBAM注意力机制风扇异常状况的识别.pdf';
+projectParams.value.college = myLoginStore.userInfo.college;
+let pageTotal = ref(0);
+const getProjectList = () => {
+	console.log('projectParams:', projectParams);
 
+	contestApi.getProjectsByCollege(projectParams.value).then((res) => {
+		projects.value = res.data.recordList;
+		pageTotal.value = res.data.total;
+	});
+};
+onMounted(() => {
+	getProjectList();
+});
+// pdf文件S
+import igpath from '@/assets/基于改进CBAM注意力机制风扇异常状况的识别.pdf';
 const pdfRef = ref(null); // 引用 VuePdfEmbed 组件
 let currentItem = ref(0);
 currentItem.value = projects.value[0].id;
@@ -49,8 +58,9 @@ function handleAudits(selece) {
 }
 
 const getRowClass = (val) => {
-	let state = val.row.state;
-	if (currentItem.value == val.row.id) {
+	console.log('val:', val);
+	let state = val.row.projectVersion?.reviewStatus;
+	if (currentItem.value == val.row.projectDetail?.id) {
 		return 'current-item'; // 当前项样式
 	} else if (state == '1') {
 		return 'approved'; // 审核通过样式
@@ -59,69 +69,104 @@ const getRowClass = (val) => {
 	}
 	return ''; // 默认样式
 };
+import TableIntefrals from '../../components/innovation/TableIntefrals.vue';
+// **评分数据（由父组件管理）**
+const baseScore = ref(60);
+const criteria = ref([
+	{ name: '文本规范', options: [2, 4, 5], selected: null },
+	{ name: '逻辑清晰', options: [2, 4, 5], selected: null },
+	{ name: '组织完善', options: [2, 4, 5], selected: null },
+	{ name: '实践合理', options: [2, 4, 5], selected: null },
+	{ name: '社会价值', options: [2, 4, 6], selected: null },
+	{ name: '前景广阔', options: [2, 4, 6], selected: null },
+	{ name: '创新意义', options: [2, 4, 6, 8], selected: null },
+]);
+
+// **存储最终的总分**
+const finalScore = ref(baseScore.value);
 </script>
 
 <template>
 	<div class="expert-review-container">
 		<h1 class="expert-review-title">专家盲审项目</h1>
-		<div class="main-container">
-			<el-table
-				:data="projects"
-				style="width: 200px; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2)"
-				:max-height="maxHeight"
-				@cell-click="changeItem"
-				:row-class-name="getRowClass"
-				:key="tableKey"
-			>
-				<el-table-column
-					prop="projectName"
-					label="项目名称"
-					width="200"
+		<el-row :gutter="40" class="custom-row">
+			<el-col :span="6"
+				><el-table
+					:data="projects"
+					style="
+						min-width: 200px;
+						box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+					"
+					:max-height="maxHeight"
+					@cell-click="changeItem"
+					:row-class-name="getRowClass"
+					:key="tableKey"
+				>
+					<el-table-column
+						prop="projectDetail.projectName"
+						label="项目名称"
+						min-width="200"
+					/> </el-table
+			></el-col>
+			<el-col :span="18">
+				<div class="image-container" :style="{ height: maxHeight }">
+					<VuePdfEmbed ref="pdfRef" :source="igpath"> </VuePdfEmbed>
+				</div>
+			</el-col>
+		</el-row>
+		<el-row :gutter="10" class="custom-row">
+			<el-col :span="12">
+				<TableIntefrals
+					:criteria="criteria"
+					:baseScore="baseScore"
+					@update:criteria="criteria = $event"
+					@update:totalScore="finalScore = $event"
+				></TableIntefrals
+			></el-col>
+			<el-col :span="12">
+				<el-input
+					v-model="textarea"
+					:rows="10"
+					type="textarea"
+					placeholder="输入项目评阅建议"
 				/>
-			</el-table>
-			<div class="image-container" :style="{ height: maxHeight }">
-				<VuePdfEmbed ref="pdfRef" :source="igpath"> </VuePdfEmbed>
-			</div>
-		</div>
-		<footer>
-			<div class="button-container">
-				<el-button type="success" plain @click="handleAudits(1)"
-					>通过</el-button
-				>
-				<el-button type="danger" plain @click="handleAudits(2)"
-					>驳回</el-button
-				>
-			</div>
-		</footer>
+				<div class="button-container">
+					<el-button type="success" @click="handleAudits(1)"
+						>保存评阅结果</el-button
+					>
+				</div>
+			</el-col>
+		</el-row>
+
+		<footer></footer>
 	</div>
 </template>
 
 <style scoped lang="less">
 .expert-review-container {
 	padding: 20px;
-}
+	.expert-review-title {
+		font-size: 24px;
+		font-weight: bold;
+		margin-bottom: 20px;
+	}
+	.custom-row {
+		margin-bottom: 20px;
+	}
 
-.expert-review-title {
-	font-size: 24px;
-	font-weight: bold;
-	margin-bottom: 20px;
-}
-
-.el-table {
-	margin-top: 20px;
-}
-
-.main-container {
-	display: flex; /* 使用flex布局 */
-	justify-content: space-around;
-}
-.image-container {
-	width: 75%; /* 限定外容器宽度为100% */
-	margin-top: 20px;
-	overflow-y: auto; /* 允许超出部分滚动 */
-	box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
-	.vue-pdf-embed {
-		width: 98%;
+	.image-container {
+		width: 100%; /* 限定外容器宽度为100% */
+		overflow-y: auto; /* 允许超出部分滚动 */
+		box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+		.vue-pdf-embed {
+			width: 98%;
+		}
+	}
+	.button-container {
+		padding: 20px;
+		width: 100%;
+		display: flex;
+		justify-content: space-evenly;
 	}
 }
 
@@ -138,16 +183,6 @@ const getRowClass = (val) => {
 ::v-deep .rejected {
 	background-color: #f2dede; /* 不通过的背景色 */
 	color: #a94442; /* 不通过的文字颜色 */
-}
-footer {
-	display: flex;
-	justify-content: end;
-	padding: 20px;
-	.button-container {
-		width: 75%;
-		display: flex;
-		justify-content: space-evenly;
-	}
 }
 /* 去除表格的焦点效果 */
 ::v-deep .el-table {

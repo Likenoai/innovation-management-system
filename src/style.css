@@ -15,7 +15,7 @@ body {
 }
 
 ::-webkit-scrollbar {
-	width: 6px; /* 滚动条的宽度 */
+	width: 12px; /* 滚动条的宽度 */
 }
 
 ::-webkit-scrollbar-track {

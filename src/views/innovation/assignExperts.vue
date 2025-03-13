@@ -1,4 +1,7 @@
 <script setup>
+/*
+ * @pageInfo: 校级专家项目分配
+ */
 import { ref, computed } from 'vue';
 import {
 	ElTable,
@@ -6,16 +9,13 @@ import {
 	ElSelect,
 	ElOption,
 	ElButton,
-	ElInput,
-	ElCheckbox,
-	ElCheckboxGroup,
 } from 'element-plus';
 import {
 	projects as mockProjects,
 	experts as mockExperts,
-} from '@/utils/mockData'; // 引入模拟数据
+} from '@/utils/mock/exoertsAssignMock.js'; // 引入模拟数据
 
-// 使用生成的模拟数据
+// 项目 & 专家数据
 const projects = ref(mockProjects);
 const experts = ref(mockExperts);
 
@@ -25,177 +25,100 @@ const selectedCategory = ref('');
 
 // 选中的项目
 const selectedProjects = ref([]);
-// 计算筛选后的项目
-const filteredProjects = computed(() => {
-	// 使用 projects.value 进行过滤，返回符合筛选条件的项目
-	return projects.value.filter((project) => {
-		// 检查项目类型和类别是否符合筛选条件
-		return (
-			// 如果没有选择类型，或者项目类型与所选类型匹配
+
+// **计算筛选后的项目**
+const filteredProjects = computed(() =>
+	projects.value.filter(
+		(project) =>
 			(!selectedType.value || project.type === selectedType.value) &&
-			// 如果没有选择类别，或者项目类别与所选类别匹配
 			(!selectedCategory.value ||
 				project.category === selectedCategory.value)
-		);
-	});
-});
+	)
+);
 
-// 计算筛选后的专家
-const filteredExperts = computed(() => {
-	return experts.value.filter((expert) => {
-		return (
+// **计算筛选后的专家**
+const filteredExperts = computed(() =>
+	experts.value.filter(
+		(expert) =>
 			(!selectedType.value || expert.type === selectedType.value) &&
 			(!selectedCategory.value ||
 				expert.category === selectedCategory.value)
-		);
-	});
-});
+	)
+);
 
-// 已分配项目
+// **已分配项目**
 const assignedProjects = ref([]);
 
-// 随机分配专家
+// **随机分配专家**
 const handleAssignExpert = (project) => {
-	const numberOfExpertsToAssign = 3; // 设置要分配的专家数量
-	const assignedExperts = [];
+	const numExperts = 3; // 每个项目分配 3 个专家
+	const shuffledExperts = [...filteredExperts.value].sort(
+		() => 0.5 - Math.random()
+	); // 洗牌
 
-	// 洗牌函数
-	const shuffleArray = (array) => {
-		for (let i = array.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[array[i], array[j]] = [array[j], array[i]]; // 交换元素
-		}
-		return array;
-	};
+	const assignedExperts = shuffledExperts
+		.slice(0, numExperts)
+		.map((e) => e.name);
 
-	// 洗牌并选择专家
-	const shuffledExperts = shuffleArray([...filteredExperts.value]);
-	console.log(shuffledExperts);
-	console.log(shuffledExperts[0], shuffledExperts[1], shuffledExperts[2]);
-	for (
-		let i = 0;
-		i < Math.min(numberOfExpertsToAssign, shuffledExperts.length);
-		i++
-	) {
-		assignedExperts.push(shuffledExperts[i].name); // 直接添加洗牌后的专家
-	}
-
-	if (assignedExperts.length > 0) {
-		// 更新项目的专家信息，确保只保留最后一次分配结果
-		const existingProjectIndex = assignedProjects.value.findIndex(
-			(p) => p.id === project.id
-		);
-		if (existingProjectIndex !== -1) {
-			// 更新已分配项目中的专家
-			assignedProjects.value[existingProjectIndex].expert =
-				assignedExperts; // 修改为多个专家
-			// 更新模拟数据中的专家信息
-			const mockProjectIndex = projects.value.findIndex(
-				(p) => p.id === project.id
-			);
-			if (mockProjectIndex !== -1) {
-				projects.value[mockProjectIndex].expert = assignedExperts; // 修改为多个专家
-			}
-			// 触发响应式更新
-			assignedProjects.value = [...assignedProjects.value]; // 重新赋值以触发更新
-		} else {
-			// 如果项目未在已分配项目中，添加新项目
-			project.expert = assignedExperts; // 修改为多个专家
-			assignedProjects.value.push({ ...project });
-			// 更新模拟数据中的专家信息
-			const mockProjectIndex = projects.value.findIndex(
-				(p) => p.id === project.id
-			);
-			if (mockProjectIndex !== -1) {
-				projects.value[mockProjectIndex].expert = assignedExperts; // 修改为多个专家
-			}
-		}
-		console.log(
-			`项目 ${project.projectName} 分配给: ${assignedExperts.join(', ')}`
-		); // 输出所有分配的专家
-	}
-};
-
-// 全选功能
-const toggleAll = (value) => {
-	if (value) {
-		selectedProjects.value = filteredProjects.value.map(
-			(project) => project.id
-		);
+	// 更新已分配列表
+	const existingProject = assignedProjects.value.find(
+		(p) => p.id === project.id
+	);
+	if (existingProject) {
+		existingProject.expert = assignedExperts;
 	} else {
-		selectedProjects.value = [];
+		assignedProjects.value.push({ ...project, expert: assignedExperts });
 	}
+
+	// 更新原始项目数据中的专家信息
+	const targetProject = projects.value.find((p) => p.id === project.id);
+	if (targetProject) targetProject.expert = assignedExperts;
 };
 
-// 根据屏幕分辨率设定最大高度
-const maxHeight = computed(() => {
-	const height = window.innerHeight;
-	// if (height < 600) {
-	// 	return '300px';
-	// } else if (height < 800) {
-	// 	return '500px';
-	// } else {
-	// 	return '700px';
-	// }
-	console.log(height - 200 + 'px');
-	return height - 300 + 'px';
-});
+// **全选功能**
+const toggleAll = (value) => {
+	selectedProjects.value = value
+		? filteredProjects.value.map((p) => p.id)
+		: [];
+};
 
-// 分配全部专家的功能
+import { useDynamicHeight } from '@/utils/index.js';
+// **计算动态表格高度**
+const maxHeight = useDynamicHeight(300);
+
+// **分配所有项目的专家**
 const assignAllExperts = () => {
-	filteredProjects.value.forEach((project) => {
-		handleAssignExpert(project);
-	});
+	filteredProjects.value.forEach(handleAssignExpert);
 };
-function log() {
-	console.log(filteredProjects.value[0].expert);
-}
-function clicklog(value) {
-	console.log(value);
-}
 
-// 添加更新专家的函数
+// **更新已分配专家**
 const updateAssignedExpert = (project, experts) => {
-	const existingProjectIndex = assignedProjects.value.findIndex(
+	const assignedProject = assignedProjects.value.find(
 		(p) => p.id === project.id
 	);
-	if (existingProjectIndex !== -1) {
-		assignedProjects.value[existingProjectIndex].expert = experts; // 更新对应项目的专家
-	}
+	if (assignedProject) assignedProject.expert = experts;
 };
 
-// 添加删除分配专家的函数
+// **移除专家分配**
 const removeAssignedExpert = (project) => {
-	const existingProjectIndex = assignedProjects.value.findIndex(
-		(p) => p.id === project.id
+	assignedProjects.value = assignedProjects.value.filter(
+		(p) => p.id !== project.id
 	);
-	if (existingProjectIndex !== -1) {
-		// 清空该项目的专家分配
-		assignedProjects.value[existingProjectIndex].expert = []; // 删除分配的专家
-		assignedProjects.value.splice(existingProjectIndex, 1);
-		const mockProjectIndex = projects.value.findIndex(
-			(p) => p.id === project.id
-		);
-		if (mockProjectIndex !== -1) {
-			projects.value[mockProjectIndex].expert = []; // 修改为多个专家
-		}
-		// 触发响应式更新
-		assignedProjects.value = [...assignedProjects.value]; // 重新赋值以触发更新
-		console.log(`项目 ${project.projectName} 的分配专家已被删除`);
-	}
+	const targetProject = projects.value.find((p) => p.id === project.id);
+	if (targetProject) targetProject.expert = [];
 };
 </script>
 
 <template>
 	<div class="assign-experts-container">
-		<h1 class="assign-experts-title">分配专家</h1>
+		<h1 class="assign-experts-title">专家分配</h1>
 
 		<!-- 筛选条件 -->
 		<div class="filter-container">
 			<el-select
 				v-model="selectedType"
 				placeholder="选择项目类型"
-				style="margin-right: 10px; width: 200px"
+				style="width: 200px"
 				clearable
 			>
 				<el-option label="创新" value="创新" />
@@ -204,7 +127,7 @@ const removeAssignedExpert = (project) => {
 			<el-select
 				v-model="selectedCategory"
 				placeholder="选择项目类别"
-				style="margin-right: 10px; width: 200px"
+				style="width: 200px"
 				clearable
 			>
 				<el-option label="科技" value="科技" />
@@ -212,26 +135,21 @@ const removeAssignedExpert = (project) => {
 			</el-select>
 		</div>
 
-		<!-- 分配全部按钮 -->
+		<!-- 批量分配 -->
 		<el-button
 			@click="assignAllExperts"
 			type="primary"
 			style="margin-bottom: 10px"
 			>随机分配全部</el-button
 		>
-		<!-- 项目表格和已分配项目表格并列显示 -->
+
 		<div class="tables-container">
-			<!-- 项目表格 -->
+			<!-- 未分配项目表格 -->
 			<el-table
 				:data="filteredProjects"
-				:style="{ width: '58%', height: maxHeight }"
-				max-height="800"
+				:height="maxHeight"
+				style="width: 58%"
 			>
-				<!-- <el-table-column
-					type="selection"
-					width="55"
-					:selectable="(row) => true"
-				/> -->
 				<el-table-column
 					prop="projectName"
 					label="项目名称"
@@ -240,15 +158,12 @@ const removeAssignedExpert = (project) => {
 				<el-table-column prop="leader" label="负责人" width="120" />
 				<el-table-column prop="level" label="级别" width="100" />
 				<el-table-column label="分配专家" width="300">
-					<template #default="scope">
+					<template #default="{ row }">
 						<el-select
-							v-model="scope.row.expert"
+							v-model="row.expert"
 							placeholder="选择专家"
 							multiple
-							@change="
-								(value) =>
-									updateAssignedExpert(scope.row, value)
-							"
+							@change="updateAssignedExpert(row, $event)"
 						>
 							<el-option
 								v-for="expert in filteredExperts"
@@ -259,11 +174,11 @@ const removeAssignedExpert = (project) => {
 						</el-select>
 					</template>
 				</el-table-column>
-				<el-table-column label="操作" fixed="right" width="150">
-					<template #default="scope">
+				<el-table-column label="操作" width="150">
+					<template #default="{ row }">
 						<el-button
 							type="primary"
-							@click="handleAssignExpert(scope.row)"
+							@click="handleAssignExpert(row)"
 							>分配</el-button
 						>
 					</template>
@@ -273,8 +188,8 @@ const removeAssignedExpert = (project) => {
 			<!-- 已分配项目表格 -->
 			<el-table
 				:data="assignedProjects"
-				:style="{ width: '38%', height: maxHeight, marginLeft: '20px' }"
-				max-height="800"
+				:height="maxHeight"
+				style="width: 38%; margin-left: 20px"
 			>
 				<el-table-column
 					prop="projectName"
@@ -282,17 +197,17 @@ const removeAssignedExpert = (project) => {
 					width="200"
 				/>
 				<el-table-column label="分配专家" width="200">
-					<template #default="scope">
-						<span>{{ scope.row.expert.join(', ') }}</span>
+					<template #default="{ row }">
+						<span>{{ row.expert.join(', ') }}</span>
 					</template>
 				</el-table-column>
 				<el-table-column prop="leader" label="负责人" width="150" />
 				<el-table-column prop="level" label="级别" width="100" />
-				<el-table-column label="操作" width="150" fixed="right">
-					<template #default="scope">
+				<el-table-column label="操作" width="150">
+					<template #default="{ row }">
 						<el-button
 							type="danger"
-							@click="removeAssignedExpert(scope.row)"
+							@click="removeAssignedExpert(row)"
 							>删除</el-button
 						>
 					</template>
@@ -314,17 +229,13 @@ const removeAssignedExpert = (project) => {
 }
 
 .filter-container {
-	margin-bottom: 20px;
 	display: flex;
-	flex-wrap: wrap;
-}
-
-.el-table {
-	margin-top: 20px;
+	gap: 10px;
+	margin-bottom: 20px;
 }
 
 .tables-container {
 	display: flex;
-	justify-content: space-between; /* 使表格之间有间距 */
+	justify-content: space-between;
 }
 </style>
