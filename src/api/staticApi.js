@@ -35,4 +35,6 @@ const updateDataApiFunction = async function (param) {
 	});
 	return res;
 };
-export const updateDataApi = withErrorHandling(updateDataApiFunction);
+export const updateDataApi = withErrorHandling(updateDataApiFunction, {
+	successMsg: '更新成功',
+});

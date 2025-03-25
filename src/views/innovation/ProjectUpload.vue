@@ -6,9 +6,13 @@ import ProjectMemberForm from '@/components/innovation/ProjectMemberForm.vue';
 import ProjectAdvisorForm from '@/components/innovation/ProjectAdvisorForm.vue';
 import ProjectUploadFiles from '@/components/innovation/ProjectUploadFiles.vue';
 import * as contestApi from '@/api/contestApi.js';
+import * as staticApi from '@/api/staticApi.js';
 import { ElMessage } from 'element-plus';
 import { mockFormData } from '../../utils/mock/exoertsAssignMock';
 import { useRoute } from 'vue-router'; // 新增路由hook
+import { useMyLoginStore } from '@/stores/myLoginStore';
+const myLoginStore = useMyLoginStore();
+let college = myLoginStore.userInfo.college;
 const route = useRoute(); // 获取路由实例
 const projectId = computed(() => route.params.projectId);
 const formData = ref({
@@ -72,13 +76,26 @@ watch(
 );
 // 移除 isUpdate 的手动赋值
 const isUpdate = computed(() => !!projectId.value);
+
+import { isAfterCurrentTime } from '../../utils/dateUtils';
+
 // 提交逻辑修正
 const submitProject = async () => {
-	if (isUpdate.value) {
-		// 使用计算属性的值
-		await handleUpdateProject();
+	const response = await staticApi.getDataByKeyApi(
+		'apply_end_time' + college
+	);
+	const endTimeStr = response.data;
+	console.log('endTimeStr:', endTimeStr);
+	// 时间比对
+	if (!isAfterCurrentTime(endTimeStr)) {
+		if (isUpdate.value) {
+			// 使用计算属性的值
+			await handleUpdateProject();
+		} else {
+			await handleCreateProject();
+		}
 	} else {
-		await handleCreateProject();
+		ElMessage.error('申请书上传时间已过');
 	}
 };
 
@@ -123,18 +140,21 @@ const handleSubmit = async () => {
 				/></el-col>
 			</el-row>
 
-			<el-row :gutter="10">
+			<el-row :gutter="10" style="padding-bottom: 10px">
 				<el-col :span="12"
 					><ProjectMemberForm
 						v-model="formData.projectMembers"
 						class="person-from-item flex-item"
 				/></el-col>
-				<el-col :span="12"
+			</el-row>
+			<el-row :gutter="10">
+				<el-col :span="24"
 					><ProjectAdvisorForm
 						v-model="formData.projectAdvisors"
 						class="person-from-item flex-item"
 				/></el-col>
 			</el-row>
+
 			<el-row>
 				<el-col :span="12"
 					><ProjectUploadFiles

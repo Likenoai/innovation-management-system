@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import * as contestApi from '@/api/contestApi.js'; // 确保路径正确
 import { ElMessage, progressProps } from 'element-plus';
-import { generateProjectData } from '@/utils/mock/exoertsAssignMock.js';
 import { useDynamicHeight } from '@/utils/tableUtils.js';
 import { Search } from '@element-plus/icons-vue';
 // 在脚本部分顶部引入工具函数
@@ -34,11 +33,6 @@ const handleTimeChange = () => {
 // 在模拟数据部分也添加排序
 onMounted(() => {
 	getCollegeProjectList();
-	// projectList.value = generateProjectData(30).sort((a, b) => {
-	// 	const orderA = a.projectVersion?.reviewOrder ?? Infinity;
-	// 	const orderB = b.projectVersion?.reviewOrder ?? Infinity;
-	// 	return orderA - orderB;
-	// });
 });
 const handleView = (project) => {
 	console.log('project:', project);
@@ -113,10 +107,6 @@ const handleOrderParams = (row) => {
 	});
 };
 
-/*
- * 处理排序变化
- * @param {boolean} type - true: 处理orderParams, false: 处理statusParams
- */
 const handleStatusOrder = async (type = true) => {
 	try {
 		if (type) {
@@ -187,16 +177,8 @@ const getCollegeProjectList = async () => {
 
 const goSetting = (row) => {
 	router.push({
-		name: 'settings-mges',
+		name: 'school-settings-mge',
 	});
-};
-const popupElMessage = (row) => {
-	if (!row.collegeAverageScore) {
-		ElMessage.warning({
-			message: '还未评分',
-			duration: 3000,
-		});
-	}
 };
 </script>
 
@@ -225,7 +207,6 @@ const popupElMessage = (row) => {
 					</template>
 				</el-input>
 				<el-button type="primary">导出</el-button>
-				搜索和导出暂时未完成
 				<!-- <el-date-picker
 					v-model="selectedTimeRange"
 					type="daterange"
@@ -393,7 +374,6 @@ const popupElMessage = (row) => {
 					></el-switch>
 					&nbsp;&nbsp;
 					<el-switch
-						:disabled="!scope.row.collegeAverageScore"
 						:model-value="
 							scope.row.projectVersion?.reviewStatus === 2
 						"
@@ -408,12 +388,11 @@ const popupElMessage = (row) => {
 							}
 						"
 						active-text="推荐"
-						:style="`
-							--el-switch-off-color: ${scope.row.collegeAverageScore ? '#409eff' : '#dcdfe6'};
-							--el-switch-on-color:  #13ce66;
+						style="
+							--el-switch-off-color: #dcdfe6;
+							--el-switch-on-color: #13ce66;
 							--el-color-primary: #13ce66;
-						`"
-						@click="popupElMessage(scope.row)"
+						"
 					></el-switch>
 				</template>
 			</el-table-column>

@@ -26,10 +26,7 @@ const temp = reactive({
 	codeDesc: '',
 });
 
-const rules = reactive({
-	codeKey: [{ required: true, message: '必填字段', trigger: 'blur' }],
-	codeValue: [{ required: true, message: '必填字段', trigger: 'blur' }],
-});
+const rules = reactive({});
 
 // 方法声明
 const getList = async () => {

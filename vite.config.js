@@ -6,8 +6,8 @@ import path from 'path';
 // 定义常量
 const LOCAL_URL = 'http://localhost:9999';
 const MOCK_URL = 'http://127.0.0.1:4523/m1/5414981-0-default';
-const TEST_LOCAL_URL = 'http://192.168.177.23:9999';
-const TEST_BUILD_URL = 'http://192.168.177.23:8001';
+const TEST_LOCAL_URL = 'http://192.168.177.23:8001';
+const TEST_BUILD_URL = 'http://192.168.177.23:8080';
 const SERVER_LOCAL_URL = 'http://192.168.177.23:9999';
 const SERVER_BUILD_URL = 'http://192.168.177.23:80';
 

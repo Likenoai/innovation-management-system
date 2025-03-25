@@ -83,13 +83,13 @@ const giveScoreFunction = async (data) => {
 		reviewDescribe: data.reviewDescribe,
 	});
 };
-export const giveScore = withErrorHandling(giveScoreFunction);
+export const giveScoreApi = withErrorHandling(giveScoreFunction);
 
 // 新增分配评审接口
-const assignToExpertScoreFunction = async () => {
-	return axios.post('/api/contest/assignToExpertScore');
+const assignToExpertScoreFunction = async (param) => {
+	return axios.post('/api/contest/assignToExpertScore', param);
 };
-export const assignToExpertScore = withErrorHandling(
+export const assignToExpertScoreApi = withErrorHandling(
 	assignToExpertScoreFunction
 );
 
@@ -129,3 +129,43 @@ const updateProjectApiFunction = async (param) => {
 	});
 };
 export const updateProject = withErrorHandling(updateProjectApiFunction);
+
+//
+const assignApplyTimeApiFunction = async (param) => {
+	return axios.post(`/api/contest/assignApplyTime`, {
+		...param,
+	});
+};
+export const assignApplyTimeApi = withErrorHandling(assignApplyTimeApiFunction);
+
+// 学院管理员查看已经分配的专家职工号
+const getAssignExpertScoreApiFunction = async (param) => {
+	return axios.get(`/api/contest/getAssignExpertScore`, {
+		...param,
+	});
+};
+export const getAssignExpertScoreApi = withErrorHandling(
+	getAssignExpertScoreApiFunction
+);
+
+// 院级专家查看自己需要打分项目
+const getPendingScoreApiFunction = async (param) => {
+	return axios.get(
+		`/api/contest/pendingScore${
+			param ? '?' + new URLSearchParams(param).toString() : ''
+		}`
+	);
+};
+export const getPendingScoreApi = withErrorHandling(getPendingScoreApiFunction);
+
+// 获取院级/校级 打分/未打分的项目集合
+const getScoreProjectsByCollegeApiFunction = async (param) => {
+	return axios.get(
+		`/api/contest/scoreProjectsByCollege${
+			param ? '?' + new URLSearchParams(param).toString() : ''
+		}`
+	);
+};
+export const getScoreProjectsByCollegeApi = withErrorHandling(
+	getScoreProjectsByCollegeApiFunction
+);

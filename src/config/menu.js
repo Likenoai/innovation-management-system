@@ -8,7 +8,11 @@ export const menuConfig = [
 	{
 		path: '/permission',
 		title: '权限管理',
-		permission: 'view_permission',
+		// permission: 'view_permission',
+	},
+	{
+		path: '/static',
+		title: '静态资源管理',
 	},
 	// {
 	// 	path: '/competitions',
@@ -32,46 +36,33 @@ export const menuConfig = [
 		path: '/innovation',
 		title: '创新创业项目',
 		icon: 'Files',
-		// permission: 'view_innovation_projects',
+		permission: 'view_innovation_projects',
 		children: [
 			{
 				path: '/my-projects',
 				title: '我的项目',
-			},
-			// {
-			// 	path: '/upload-innovation',
-			// 	title: '上传项目',
-			// 	permission: 'view_innovation_upload',
-			// },
-			{
-				path: '/set-upload-innovation',
-				title: '设定学生提交项目信息',
-				permission: 'view_set_upload_innovation',
+				permission: 'view_my_projects',
 			},
 			{
 				path: '/college-project-settings',
-				title: '学院项目设置',
+				title: '院级评审',
+				permission: 'view_college_project_settings',
+			},
+			{
+				path: '/school-project-settings',
+				title: '校级评审',
+				permission: 'view_school_project_settings',
 			},
 			{
 				path: '/expert-review',
 				title: '专家评审',
-				// permission: 'view_expert_review',
+				permission: 'view_expert_review',
 			},
 			{
 				path: '/assign-experts',
 				title: '分配专家',
 				permission: 'view_assign_experts',
 			},
-			// {
-			// 	path: '/provincial-recommendation',
-			// 	title: '推荐省赛项目',
-			// 	permission: 'view_provincial_recommendation',
-			// },
-			// {
-			// 	path: '/achievement-entry',
-			// 	title: '成果录入',
-			// 	permission: 'view_achievement_entry',
-			// },
 		],
 	},
 	{

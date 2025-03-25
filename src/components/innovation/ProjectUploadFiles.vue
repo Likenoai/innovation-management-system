@@ -4,7 +4,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useMyLoginStore } from '@/stores/myLoginStore';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { checkCollegeEndTime } from '@/utils/staticUtils.js';
 
+let isCanUpload = ref();
+onMounted(async () => {
+	isCanUpload.value = await checkCollegeEndTime();
+	console.log('isCanUpload.value :', isCanUpload.value);
+});
 const myLoginStore = useMyLoginStore();
 const { token } = storeToRefs(myLoginStore);
 const props = defineProps(['modelValue']);
@@ -122,7 +128,9 @@ onUnmounted(() => {
 				show-file-list
 				:headers="{ 'SC-TOKEN': 'Bearer ' + token }"
 			>
-				<el-button type="primary">上传文件</el-button>
+				<el-button type="primary" :disabled="!isCanUpload"
+					>上传文件</el-button
+				>
 			</el-upload>
 		</el-form-item>
 	</el-form>

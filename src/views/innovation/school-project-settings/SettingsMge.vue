@@ -1,72 +1,50 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive, computed, watch } from 'vue';
 import * as staffApi from '@/api/staffApi.js';
 import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '../../../stores/myLoginStore';
+import { usePubliceStore } from '../../../stores/publiceStore';
 import * as staticApi from '@/api/staticApi.js';
 import * as contestApi from '@/api/contestApi.js';
 // 时间管理数据
 
 const myLoginStore = useMyLoginStore();
+const publiceStore = usePubliceStore();
+
 // 评审管理数据
-
 let college = myLoginStore.userInfo.college;
-let codeKeyApplyEnd = 'apply_end_time' + college;
-let codeKeyCollegeStart = 'college_review_start_time' + college;
-let applyEndTime = ref('');
-let collegeStartTime = ref('');
-
+let codeKeyCollegeEnd = 'all_college_end_time';
+let collegeEndTime = ref('');
 // 初始化数据 S
-const getApplyEndTime = async () => {
-	const response = await staticApi.getDataByKeyApi(codeKeyApplyEnd);
-	applyEndTime.value = response.data;
+//#region
+const getCollegeEndTime = async () => {
+	const response = await staticApi.getDataByKeyApi(codeKeyCollegeEnd);
+	collegeEndTime.value = response.data;
 	return response;
 };
 
-const getCollegeStartTime = async () => {
-	const response = await staticApi.getDataByKeyApi(codeKeyCollegeStart);
-	collegeStartTime.value = response.data;
-	return response;
-};
 onMounted(() => {
-	getApplyEndTime();
-	getCollegeStartTime();
+	getCollegeEndTime();
 });
+//#endregion
 // 初始化数据 E
 
 // 时间管理方法 S
-const updataApplyEndTime = async () => {
-	let res = await staticApi
-		.updateDataApi(
-			{
-				codeKey: codeKeyApplyEnd,
-				codeValue: applyEndTime.value,
-			},
-			{
-				successMsg: '申请书截至时间修改成功',
-			}
-		)
-		.then(() => {
-			contestApi.assignApplyTimeApi({
-				applyDateTime: applyEndTime.value,
-			});
-		});
-	console.log(res);
-};
-const updateCollegeStartTime = async () => {
+const updateCollegeEndTime = async () => {
 	let res = await staticApi.updateDataApi(
 		{
-			codeKey: codeKeyCollegeStart,
-			codeValue: collegeStartTime.value,
+			codeKey: codeKeyCollegeEnd,
+			codeValue: collegeEndTime.value,
 		},
 		{
-			successMsg: '院级评审开始时间修改成功',
+			successMsg: '院级评审截止时间修改成功',
 		}
 	);
 };
 // 时间管理方法 E
 
 // 评审专家管理 S
+//#region
 // 处理分页
 let expertPaging = ref({
 	pageNum: 1,
@@ -79,7 +57,6 @@ const getExperts = async () => {
 	const response = await staffApi.getCollegeExpertsApi({
 		college: myLoginStore.userInfo.college,
 	});
-	console.log('response:', response);
 
 	expertPaging.value.total = response.data.length;
 	const res = await contestApi.getAssignExpertScoreApi();
@@ -92,8 +69,8 @@ const getExperts = async () => {
 		isCancel: !idMap.has(expert.personnelCode), // O(1) 时间复杂度查询
 	}));
 	reviewExperts.value = experts.value.filter((expert) => !expert.isCancel);
-	console.log('processed experts:', experts.value);
 };
+//#endregion
 /**
  * 处理分页变化
  * @param {number} page - 当前页码
@@ -108,7 +85,6 @@ onMounted(() => {
 });
 
 const assignToExpertScore = async (row) => {
-	console.log('row:', row);
 	const res = await contestApi.assignToExpertScoreApi({
 		personnelCode: row.personnelCode,
 		isCancel: row.isCancel,
@@ -145,7 +121,6 @@ const getScoreProject = withFirstCall(async (isFirstCall) => {
 	let res1Data = res1.data.recordList || [];
 	const res = res1Data.concat(res2.data.recordList);
 	reviewProject.value = res;
-	console.log('reviewProject.value:', reviewProject.value);
 	if (isAllot.value) {
 		if (!isFirstCall) ElMessage.success('已分配');
 		return;
@@ -178,7 +153,6 @@ let isAllot = ref(true);
 const getAllot = async () => {
 	let key = 'allot' + college;
 	const res = await staticApi.getDataByKeyApi(key).then((res) => {
-		console.log('res:', res);
 		switch (res.data) {
 			case null:
 				staticApi
@@ -193,11 +167,9 @@ const getAllot = async () => {
 					});
 				break;
 			case '0':
-				console.log('0');
 				isAllot.value = false;
 				break;
 			case '1':
-				console.log('1');
 				isAllot.value = true;
 				getScoreProject();
 				break;
@@ -211,10 +183,130 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 // 路由跳转
 const goProjectTableMgs = (row) => {
-	console.log('!!!');
 	router.push({
-		name: 'project-table-Mges',
+		name: 'school-project-table-Mge',
 	});
+};
+
+// 学院项目管理S
+//#region
+import { isExist, initStatic } from '../../../utils/staticUtils';
+import { errorMessages } from 'vue/compiler-sfc';
+
+let projectCount = ref(0); // 项目数量
+let selectedCollege = ref(''); // 选中的学院
+let allCollege = reactive(publiceStore.allCollege); // 所有学院
+let projectNumCodeKey = computed(() => 'project_num' + selectedCollege.value);
+
+// 监听 selectedCollege 变化
+watch(selectedCollege, async (newVal) => {
+	if (newVal) {
+		const res = await staticApi.getDataByKeyApi(projectNumCodeKey.value);
+		projectCount.value = res.data ? Number(res.data) : 0;
+	}
+});
+
+const updateProjectCount = async () => {
+	await initStatic({
+		codeKey: projectNumCodeKey.value,
+		codeValue: 0,
+		codeName: `${selectedCollege.value}项目数量`,
+	});
+	const res = await staticApi.updateDataApi(
+		{
+			codeKey: projectNumCodeKey.value,
+			codeValue: projectCount.value,
+		},
+		{
+			successMsg: '项目数量修改成功',
+			errorMsg: '项目数量修改失败',
+		}
+	);
+};
+
+onMounted(() => {
+	publiceStore.getAllCollege();
+});
+//#endregion
+// 学院项目管理E
+
+// 校级评审开始时间S
+//#region
+let codeKeySchoolStart = 'school_review_start_time';
+let codeKeySchoolEnd = 'school_review_end_time';
+let schoolStartTime = ref('');
+let schoolEndTime = ref('');
+const getShooolTime = async () => {
+	const response1 = await staticApi.getDataByKeyApi(codeKeySchoolStart);
+	const response2 = await staticApi.getDataByKeyApi(codeKeySchoolEnd);
+	schoolStartTime.value = response1.data;
+	schoolEndTime.value = response2.data;
+	return response1, response2;
+};
+onMounted(() => {
+	getShooolTime();
+});
+const updateSchoolTime = async (type) => {
+	if (type == 'start') {
+		let res = await staticApi.updateDataApi({
+			codeKey: codeKeySchoolStart,
+			codeValue: schoolStartTime.value,
+		});
+	} else {
+		let res = await staticApi.updateDataApi({
+			codeKey: codeKeySchoolEnd,
+			codeValue: schoolEndTime.value,
+		});
+	}
+};
+//#endregion
+// 校级评审开始时间E
+
+// 重点领域S
+//#region
+let codeKeySpecial = 'special';
+let special = ref('');
+//#endregion
+// 重点领域E
+
+// 校级专家权重管理 S
+let codeKeyExpertWeights = 'expert_weights';
+let expertWeights = ref({
+	student: 30,
+	internal: 50,
+	external: 20,
+});
+const getExpertWeights = async () => {
+	const res = await staticApi.getDataByKeyApi(codeKeyExpertWeights);
+	expertWeights.value = {
+		student: Number(res.data.split('，')[0]),
+		internal: Number(res.data.split('，')[1]),
+		external: Number(res.data.split('，')[2]),
+	};
+};
+onMounted(() => {
+	getExpertWeights();
+});
+const updateExpertWeights = async () => {
+	const total =
+		expertWeights.value.student +
+		expertWeights.value.internal +
+		expertWeights.value.external;
+	if (total !== 100) {
+		ElMessage.error('权重总和必须为100%');
+		return;
+	}
+
+	const res = await staticApi.updateDataApi(
+		{
+			codeKey: 'expert_weights',
+			codeValue: `${expertWeights.value.student}，${expertWeights.value.internal}，${expertWeights.value.external}`,
+		},
+		{
+			successMsg: '权重设置成功',
+			errorMsg: '权重设置失败',
+		}
+	);
 };
 </script>
 
@@ -233,32 +325,85 @@ const goProjectTableMgs = (row) => {
 				<!-- 时间管理 -->
 				<el-tab-pane label="时间管理">
 					<el-form label-width="160px">
-						<el-form-item label="申请书截止时间">
+						<el-form-item label="院级评审结束时间">
 							<el-date-picker
-								v-model="applyEndTime"
-								type="datetime"
-								placeholder="选择截止时间"
-								value-format="YYYY-MM-DD HH:mm:ss"
-							/>
-							<el-button
-								style="margin-left: 10px"
-								@click="updataApplyEndTime"
-								type="primary"
-								plain
-								>确定</el-button
-							>
-						</el-form-item>
-
-						<el-form-item label="院级评审开始时间">
-							<el-date-picker
-								v-model="collegeStartTime"
+								v-model="collegeEndTime"
 								type="datetime"
 								placeholder="选择开始时间"
 								value-format="YYYY-MM-DD HH:mm:ss"
 							/>
 							<el-button
 								style="margin-left: 10px"
-								@click="updateCollegeStartTime"
+								@click="updateCollegeEndTime"
+								type="primary"
+								plain
+								>确定</el-button
+							>
+						</el-form-item>
+
+						<el-form-item label="学院项目数量">
+							<el-select
+								v-model="selectedCollege"
+								placeholder="请选择学院"
+								style="width: 200px; margin-right: 10px"
+							>
+								<el-option
+									v-for="college in allCollege"
+									:key="college"
+									:label="college"
+									:value="college"
+								/>
+							</el-select>
+							<el-input-number v-model="projectCount" :min="0" />
+							<el-button
+								style="margin-left: 10px"
+								type="primary"
+								plain
+								@click="updateProjectCount"
+								>确定</el-button
+							>
+						</el-form-item>
+						<el-form-item label="校级评审开始时间">
+							<el-date-picker
+								v-model="schoolStartTime"
+								type="datetime"
+								placeholder="选择开始时间"
+								value-format="YYYY-MM-DD HH:mm:ss"
+							/>
+							<el-button
+								style="margin-left: 10px"
+								@click="updateSchoolTime('start')"
+								type="primary"
+								plain
+								>确定</el-button
+							>
+						</el-form-item>
+						<el-form-item label="校级评审结束时间">
+							<el-date-picker
+								v-model="schoolEndTime"
+								type="datetime"
+								placeholder="选择结束时间"
+								value-format="YYYY-MM-DD HH:mm:ss"
+							/>
+							<el-button
+								style="margin-left: 10px"
+								@click="updateSchoolTime('end')"
+								type="primary"
+								plain
+								>确定</el-button
+							>
+						</el-form-item>
+						<el-form-item label="重点领域">
+							<el-col :span="6"
+								><el-input
+									v-model="special"
+									placeholder="输入重点领域"
+								></el-input
+							></el-col>
+
+							<el-button
+								style="margin-left: 10px"
+								@click="updateSchoolTime('end')"
 								type="primary"
 								plain
 								>确定</el-button
@@ -266,7 +411,42 @@ const goProjectTableMgs = (row) => {
 						</el-form-item>
 					</el-form>
 				</el-tab-pane>
-
+				<!-- 专家权重管理 -->
+				<el-tab-pane label="专家权重管理">
+					<el-form label-width="160px">
+						<el-form-item label="学生专家权重">
+							<el-slider
+								v-model="expertWeights.student"
+								:min="0"
+								:max="100"
+								show-input
+							/>
+						</el-form-item>
+						<el-form-item label="校内专家权重">
+							<el-slider
+								v-model="expertWeights.internal"
+								:min="0"
+								:max="100"
+								show-input
+							/>
+						</el-form-item>
+						<el-form-item label="校外专家权重">
+							<el-slider
+								v-model="expertWeights.external"
+								:min="0"
+								:max="100"
+								show-input
+							/>
+						</el-form-item>
+						<el-form-item>
+							<el-button
+								type="primary"
+								@click="updateExpertWeights"
+								>保存设置</el-button
+							>
+						</el-form-item>
+					</el-form>
+				</el-tab-pane>
 				<!-- 评审管理 -->
 				<el-tab-pane label="评审专家管理">
 					<div class="expert-management">

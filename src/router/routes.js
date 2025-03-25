@@ -7,11 +7,22 @@ const routes = [
 		component: () => import('../views/login/index.vue'),
 	},
 	{
+		// 专家评审
+		path: '/expert-review',
+		name: 'ExpertReview',
+		component: () => import('../views/innovation/expertReview.vue'),
+		meta: {
+			requiresAuth: true,
+			permission: 'view_expert_review',
+		},
+	},
+	{
 		path: '/',
 		component: () => import('../layout/index.vue'),
 		redirect: '/home',
 		children: [
 			{
+				// 静态资源管理
 				path: 'static',
 				name: 'static',
 				component: () => import('../views/StaticMge.vue'),
@@ -21,15 +32,17 @@ const routes = [
 				// },
 			},
 			{
+				// 权限管理
 				path: 'permission',
 				name: 'permission',
 				component: () => import('../views/PermissionsManagement.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_permission',
-				},
+				// meta: {
+				// 	requiresAuth: true,
+				// 	permission: 'view_permission',
+				// },
 			},
 			{
+				// 首页
 				path: 'home',
 				name: 'Home',
 				component: () => import('../views/home/index.vue'),
@@ -57,12 +70,6 @@ const routes = [
 			},
 			// Innovation Module
 			{
-				path: 'ai-innovation-expert-assignment',
-				name: 'Innovation-Expert-Assignment',
-				component: () =>
-					import('../views/ai-innovation/ExpertAssignment.vue'),
-			},
-			{
 				path: 'my-projects',
 				name: 'MyProjects',
 				component: () => import('../views/innovation/MyProjects.vue'),
@@ -79,6 +86,7 @@ const routes = [
 				// },
 			},
 			{
+				// 学院项目设置
 				path: 'college-project-settings',
 				name: 'CollegeProjectSettings',
 				component: () =>
@@ -86,6 +94,10 @@ const routes = [
 						'../views/innovation/college-project-settings/CollegeProjectSettings.vue'
 					),
 				redirect: '/college-project-settings/project-table-Mge',
+				meta: {
+					requiresAuth: true,
+					permission: 'view_college_project_settings',
+				},
 				children: [
 					{
 						path: 'project-table-Mge',
@@ -106,26 +118,34 @@ const routes = [
 				],
 			},
 			{
-				// 设定学生提交项目信息
-				path: 'set-upload-innovation',
-				name: 'SetUploadInnovation',
+				// 学校项目设置
+				path: 'school-project-settings',
+				name: 'SchoolProjectSettings',
 				component: () =>
-					import('../views/innovation/setUploadInnovation.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_set_upload_innovation',
-				},
+					import(
+						'../views/innovation/school-project-settings/SchoolProjectSettings.vue'
+					),
+				redirect: '/school-project-settings/school-project-table-Mge',
+				children: [
+					{
+						path: 'school-project-table-Mge',
+						name: 'school-project-table-Mge',
+						component: () =>
+							import(
+								'../views/innovation/school-project-settings/ProjectTableMge.vue'
+							),
+					},
+					{
+						path: 'school-settings-mge',
+						name: 'school-settings-mge',
+						component: () =>
+							import(
+								'../views/innovation/school-project-settings/SettingsMge.vue'
+							),
+					},
+				],
 			},
-			{
-				// 专家评审
-				path: 'expert-review',
-				name: 'ExpertReview',
-				component: () => import('../views/innovation/expertReview.vue'),
-				// meta: {
-				// 	requiresAuth: true,
-				// 	permission: 'view_expert_review',
-				// },
-			},
+
 			{
 				// 分配专家
 				path: 'assign-experts',
@@ -135,28 +155,6 @@ const routes = [
 				meta: {
 					requiresAuth: true,
 					permission: 'view_assign_experts',
-				},
-			},
-			{
-				// 推荐省赛项目
-				path: 'provincial-recommendation',
-				name: 'ProvincialRecommendation',
-				component: () =>
-					import('../views/innovation/provincialRecommendation.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_provincial_recommendation',
-				},
-			},
-			{
-				// 成功录入
-				path: 'achievement-entry',
-				name: 'AchievementEntry',
-				component: () =>
-					import('../views/innovation/achievementEntry.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_achievement_entry',
 				},
 			},
 

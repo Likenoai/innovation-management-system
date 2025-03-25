@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { getInfoApi } from '@/api/staffApi.js';
 import * as verifyApi from '@/api/verifyApi.js';
+import { usePubliceStore } from '../../stores/publiceStore';
+const publiceStore = usePubliceStore();
 // 登录参数
 const loginParam = ref({
 	account: '',
@@ -22,7 +24,7 @@ const registerParam = ref({
 	username: '',
 	password: '',
 	confirmPassword: '',
-	role: '6', // 默认身份为学生
+	roleId: '6', // 默认身份为学生
 });
 const router = useRouter(); // 实例化路由
 const loginStore = useMyLoginStore(); // 获取登录仓库
@@ -77,6 +79,7 @@ async function handleLogin() {
 					return getInfoApi();
 				})
 				.then((infoData) => {
+					console.log('infoData:', infoData);
 					return loginStore.setDetailUserInfo({
 						...infoData.data,
 					});
@@ -88,6 +91,10 @@ async function handleLogin() {
 					loginStore.permissions = permissionData.data.map((item) => {
 						return item.permissionCode;
 					});
+				})
+				.then(() => {
+					// 初始化publiceStore仓库
+					publiceStore.getAllCollege();
 				});
 			ElMessage.success('登录成功');
 			router.push('/');
@@ -110,7 +117,6 @@ async function handleRegister() {
 		ElMessage.error('两次输入的密码不一致');
 		return;
 	}
-	checkStaffApi;
 	try {
 		const response = await addApi({
 			...registerParam.value,
@@ -157,7 +163,6 @@ let imagesId = ref();
 let isPass = ref(false);
 const getCode = async () => {
 	let res = await verifyApi.getCodeApi();
-	console.log(res);
 	base64Image.value = res.data.base64;
 	imagesId.value = res.data.id;
 };
@@ -166,14 +171,13 @@ const checkCode = async () => {
 		id: imagesId.value,
 		text: vrf.value,
 	});
-	console.log(res);
 	isPass.value = res.data;
 	return res.data;
 };
 const checkStaff = async () => {
 	let res = await verifyApi.checkStaffApi({
 		account: registerParam.value.username,
-		type: registerParam.value.role == '6' ? '0' : '1',
+		type: registerParam.value.roleId == '6' ? '0' : '1',
 	});
 	return res.data;
 };
@@ -358,7 +362,7 @@ function initThreeBackground() {
 
 				<div class="form-group">
 					<label>身份选择</label>
-					<el-radio-group v-model="registerParam.role">
+					<el-radio-group v-model="registerParam.roleId">
 						<el-radio label="6">学生</el-radio>
 						<el-radio label="5">教师</el-radio>
 					</el-radio-group>

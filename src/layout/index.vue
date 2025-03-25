@@ -30,8 +30,6 @@ const toggleAside = () => {
 // 权限相关变量和函数
 const userPermissions = computed(() => {
 	try {
-		// console.log('loginStore.permissions:', loginStore);
-
 		const permissions = loginStore.permissions;
 		return permissions ? permissions : [];
 	} catch (error) {
@@ -41,7 +39,6 @@ const userPermissions = computed(() => {
 });
 
 const filterMenus = (menus) => {
-	// console.log(userPermissions);
 	let tempMenus = menus.filter((menu) => {
 		if (
 			menu.permission &&
@@ -125,7 +122,6 @@ import { ElMessageBox } from 'element-plus';
 const { proxy } = getCurrentInstance();
 
 watch(selectedRole, (newRole) => {
-	// console.log('selectedRole:', newRole);
 	loginStore.userRole = newRole;
 	loginStore.permissions = rolePermissions[newRole];
 	authorizedMenus.value = filterMenus(menuConfig);
@@ -135,7 +131,6 @@ watch(selectedRole, (newRole) => {
 
 let dialogVisible = ref(false);
 const handelInfo = () => {
-	console.log('userInfo:', dialogVisible);
 	dialogVisible.value = true;
 };
 // 格式化字段标签
@@ -198,7 +193,6 @@ const handleMouseMove = (event) => {
 
 onMounted(() => {
 	window.addEventListener('mousemove', handleMouseMove);
-	// console.log('mounted menuConfig:', menuConfig);
 });
 
 onBeforeUnmount(() => {

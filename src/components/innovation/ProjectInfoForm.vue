@@ -146,6 +146,7 @@ defineExpose({
 		<el-divider content-position="center" border-style="none">
 			<h1>项目信息</h1>
 		</el-divider>
+
 		<el-row :gutter="20">
 			<el-col :span="12">
 				<el-form-item label="项目名称" prop="projectName">

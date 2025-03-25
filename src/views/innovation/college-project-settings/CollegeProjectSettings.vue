@@ -2,6 +2,9 @@
 import { useDynamicHeight } from '@/utils/tableUtils.js';
 import { ref } from 'vue';
 let tableHeight = useDynamicHeight(100);
+import { useMyLoginStore } from '../../../stores/myLoginStore';
+const myLoginStore = useMyLoginStore();
+const currentCollege = myLoginStore.userInfo.college;
 </script>
 
 <template>

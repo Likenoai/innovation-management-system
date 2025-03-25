@@ -120,3 +120,17 @@ export function useDynamicHeight(offset = 320) {
 
 	return height;
 }
+
+/**
+ * 创建带有首次调用标记的高阶函数
+ * @param {Function} originalFunc - 需要包装的原始函数
+ * @returns {Function} 包装后的新函数，带有isFirstCall属性
+ */
+export function withFirstCall(originalFunc) {
+	let isFirstCall = true;
+	return function (...args) {
+		const result = originalFunc.call(this, isFirstCall, ...args);
+		isFirstCall = false;
+		return result;
+	};
+}

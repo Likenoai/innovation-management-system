@@ -1,18 +1,43 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import * as contestApi from '@/api/contestApi.js'; // 确保路径正确
+import * as staticApi from '@/api/staticApi.js'; // 确保路径正确
 import { ElMessage } from 'element-plus';
 import { generateProjectData } from '@/utils/mock/exoertsAssignMock.js';
 import { useDynamicHeight } from '@/utils/tableUtils.js';
 import { formateTime } from '@/utils/dateUtils.js';
+import { useMyLoginStore } from '@/stores/myLoginStore.js';
+const myLoginStore = useMyLoginStore();
+let college = myLoginStore.userInfo.college;
+let isStudent = computed(() => {
+	return myLoginStore.role === 6;
+});
 const isMock = false;
 const router = useRouter();
 const loading = ref(false);
 const projectList = ref([]);
 let tableHeight = useDynamicHeight(200);
-const goToUploadProject = () => {
-	router.push({ name: 'UploadInnovation' });
+
+import { isAfterCurrentTime } from '../../utils/dateUtils';
+const goToUploadProject = async () => {
+	try {
+		const response = await staticApi.getDataByKeyApi(
+			'apply_end_time' + college
+		);
+		const endTimeStr = response.data;
+		console.log('endTimeStr:', endTimeStr);
+
+		// 时间比对
+		if (!isAfterCurrentTime(endTimeStr)) {
+			router.push({ name: 'UploadInnovation' });
+		} else {
+			ElMessage.error('申请书上传时间已过，无法提交新项目');
+		}
+	} catch (error) {
+		console.error('请求失败:', error);
+		ElMessage.error('无法获取评审时间，请稍后重试');
+	}
 };
 
 const getProjectList = async () => {
@@ -60,7 +85,7 @@ const handleView = (project) => {
 				<el-col :span="6"><h1>我的项目</h1></el-col>
 				<el-col :span="6" align="right" :push="12"
 					><el-button type="primary" @click="goToUploadProject"
-						>上传新项目</el-button
+						>项目申请</el-button
 					></el-col
 				>
 			</el-row>
@@ -145,6 +170,7 @@ const handleView = (project) => {
 					label="项目负责人"
 					:min-width="150"
 					align="center"
+					v-if="isStudent"
 				>
 					<template #default="scope">
 						<span v-if="scope.row.dutyFlag === true"

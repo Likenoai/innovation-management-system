@@ -2,7 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '../stores/myLoginStore.js';
 import { defineAsyncComponent } from 'vue';
+import { getDataByKeyApi } from '@/api/staticApi.js';
+import { isAfterCurrentTime } from '../utils/dateUtils.js';
 import routes from './routes.js';
+
 const router = createRouter({
 	history: createWebHistory(),
 	routes,
@@ -13,7 +16,7 @@ router.beforeEach((to, from, next) => {
 	const loginStore = useMyLoginStore();
 	const token = loginStore.token;
 	const permissions = loginStore.permissions;
-
+	const college = loginStore.userInfo.college;
 	if (to.path === '/login') {
 		if (token) {
 			next('/');
@@ -37,6 +40,18 @@ router.beforeEach((to, from, next) => {
 				return;
 			}
 		}
+	}
+
+	if (to.path === '/expert-review') {
+		// 检查是否有项目
+		getDataByKeyApi('college_review_start_time' + college).then((res) => {
+			if (!isAfterCurrentTime(res.data)) {
+				ElMessage.error('评审时间未开始');
+			} else {
+				next();
+			}
+		});
+		return;
 	}
 
 	next();

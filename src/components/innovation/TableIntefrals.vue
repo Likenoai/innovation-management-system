@@ -37,30 +37,30 @@ const clearSelection = () => {
 </script>
 
 <template>
-	<el-table :data="props.criteria" border>
-		<el-table-column prop="name" label="评分项" width="150" />
-		<el-table-column label="一档" width="100">
+	<el-table :data="props.criteria" border size="small">
+		<el-table-column prop="name" label="评分项" min-width="70" />
+		<el-table-column label="一档" min-width="50">
 			<template #default="{ row }">
 				<el-radio v-model="row.selected" :label="row.options[0]">
 					{{ row.options[0] }}
 				</el-radio>
 			</template>
 		</el-table-column>
-		<el-table-column label="二档" width="100">
+		<el-table-column label="二档" min-width="50">
 			<template #default="{ row }">
 				<el-radio v-model="row.selected" :label="row.options[1]">
 					{{ row.options[1] }}
 				</el-radio>
 			</template>
 		</el-table-column>
-		<el-table-column label="三档" width="100">
+		<el-table-column label="三档" min-width="50">
 			<template #default="{ row }">
 				<el-radio v-model="row.selected" :label="row.options[2]">
 					{{ row.options[2] }}
 				</el-radio>
 			</template>
 		</el-table-column>
-		<el-table-column label="四档" width="100">
+		<el-table-column label="四档" min-width="50">
 			<template #default="{ row }">
 				<el-radio
 					v-model="row.selected"
@@ -73,16 +73,15 @@ const clearSelection = () => {
 		</el-table-column>
 	</el-table>
 
-	<div style="margin-top: 20px; text-align: center">
-		<el-row :gutter="10">
-			<el-col :span="12"
-				><h3>总分: {{ totalScore }}</h3></el-col
-			>
-			<el-col :span="12"
-				><el-button type="primary" @click="clearSelection"
-					>清零</el-button
-				></el-col
-			>
-		</el-row>
+	<div
+		style="
+			width: 100%;
+			display: flex;
+			justify-content: space-around;
+			padding: 10px;
+		"
+	>
+		<h3 style="text-wrap: nowrap">总分: {{ totalScore }}</h3>
+		<el-button type="primary" @click="clearSelection" plain>清零</el-button>
 	</div>
 </template>

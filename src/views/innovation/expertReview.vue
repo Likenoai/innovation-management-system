@@ -9,66 +9,90 @@ import { useDynamicHeight } from '@/utils/index.js';
 import { generateProjectData } from '@/utils/mock/exoertsAssignMock.js';
 import * as contestApi from '@/api/contestApi.js';
 import { useMyLoginStore } from '@/stores/myLoginStore.js';
+import { getDataByKeyApi } from '../../api/staticApi';
 // 基础数据S
 const myLoginStore = useMyLoginStore();
+const college = myLoginStore.userInfo.college;
 const projects = ref();
 projects.value = generateProjectData(30);
-const maxHeight = useDynamicHeight(200);
+const maxHeight = useDynamicHeight(160);
 const projectParams = ref({
 	pagnNum: 1,
 	pageSize: 10,
-	college: '',
+	type: '0',
+	status: '', //0为打分 1已打分
 });
 projectParams.value.college = myLoginStore.userInfo.college;
 let pageTotal = ref(0);
-const getProjectList = () => {
-	console.log('projectParams:', projectParams);
 
-	contestApi.getProjectsByCollege(projectParams.value).then((res) => {
-		projects.value = res.data.recordList;
-		pageTotal.value = res.data.total;
+import { withFirstCall } from '@/utils/index.js';
+// 获取待评分项目列表
+const getProjectList = withFirstCall(async (isFirstCall) => {
+	try {
+		const [res1, res2] = await Promise.all([
+			contestApi.getPendingScoreApi({
+				...projectParams.value,
+				status: '0',
+			}),
+			contestApi.getPendingScoreApi({
+				...projectParams.value,
+				status: '1',
+			}),
+		]);
+
+		// 处理未打分项目
+		const unScored = (res1.data?.recordList || []).map((item) => ({
+			...item,
+			isScore: false, // status=0 的未打分
+		}));
+
+		// 处理已打分项目
+		const scored = (res2.data?.recordList || []).map((item) => ({
+			...item,
+			isScore: true, // status=1 的已打分
+		}));
+
+		projects.value = [...unScored, ...scored];
+		pageTotal.value = (res1.data?.total || 0) + (res2.data?.total || 0);
+		if (isFirstCall) currentItem.value = projects.value[0].id;
+	} catch (error) {
+		console.error('获取项目列表失败:', error);
+	}
+});
+const handlePageChange = (num) => {
+	projectParams.value.pagnNum = num;
+	getProjectList();
+};
+const collegeEndTime = ref();
+const getCollegeEndTime = async () => {
+	getDataByKeyApi('all_college_end_time').then((res) => {
+		collegeEndTime.value = res.data;
 	});
 };
 onMounted(() => {
 	getProjectList();
+	getCollegeEndTime();
 });
+// 基础数据E
+
 // pdf文件S
 import igpath from '@/assets/基于改进CBAM注意力机制风扇异常状况的识别.pdf';
-const pdfRef = ref(null); // 引用 VuePdfEmbed 组件
 let currentItem = ref(0);
-currentItem.value = projects.value[0].id;
 let currentItemPdf = ref(igpath);
 function changeItem(row) {
+	if (currentItem.value == row.id) {
+		return;
+	}
+	clearParam();
 	currentItem.value = row.id;
 	projects.value.forEach((item) => {
 		if (item.id == currentItem.value) {
-			pdfRef.value = item.state;
+			currentItemPdf.value = item.attachment;
 			return;
 		}
 	});
 }
 
-function handleAudits(selece) {
-	projects.value.forEach((item) => {
-		if (item.id == currentItem.value) {
-			item.state = selece;
-			return;
-		}
-	});
-}
-
-const getRowClass = (val) => {
-	console.log('val:', val);
-	let state = val.row.projectVersion?.reviewStatus;
-	if (currentItem.value == val.row.projectDetail?.id) {
-		return 'current-item'; // 当前项样式
-	} else if (state == '1') {
-		return 'approved'; // 审核通过样式
-	} else if (state == '2') {
-		return 'rejected'; // 不通过样式
-	}
-	return ''; // 默认样式
-};
 import TableIntefrals from '../../components/innovation/TableIntefrals.vue';
 // **评分数据（由父组件管理）**
 const baseScore = ref(60);
@@ -81,60 +105,133 @@ const criteria = ref([
 	{ name: '前景广阔', options: [2, 4, 6], selected: null },
 	{ name: '创新意义', options: [2, 4, 6, 8], selected: null },
 ]);
-
+const clearParam = () => {
+	criteria.value.forEach((item) => (item.selected = null));
+	remark.value = '';
+};
 // **存储最终的总分**
-const finalScore = ref(baseScore.value);
+let finalScore = ref(0);
+let remark = ref('');
+const giveScore = async () => {
+	let param = projects.value.find((item) => item.id == currentItem.value);
+	console.log('param:', param);
+	let res = await contestApi
+		.giveScoreApi({
+			detailId: param.id,
+			projectId: param.projectId,
+			reviewType: '0', //打分类型院 0--院级打分  1--校级打分
+			reviewScore: finalScore.value,
+			reviewDetail: JSON.stringify(criteria.value),
+			reviewDescribe: remark.value,
+		})
+		.then(() => {
+			getProjectList();
+		});
+	console.log('res:', res);
+};
+
+// 返回首页S
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const goHome = () => {
+	router.push('/home');
+};
 </script>
 
 <template>
 	<div class="expert-review-container">
-		<h1 class="expert-review-title">专家盲审项目</h1>
+		<el-row :gutter="10">
+			<el-col :span="12"
+				><h1 class="expert-review-title">专家盲审项目</h1></el-col
+			>
+			<el-col :span="6" align="end"
+				>评审结束时间：{{ collegeEndTime }}</el-col
+			>
+			<el-col :span="6" align="end"
+				><el-button type="primary" @click="goHome"
+					>返回首页</el-button
+				></el-col
+			>
+		</el-row>
+
 		<el-row :gutter="40" class="custom-row">
-			<el-col :span="6"
+			<el-col :span="4"
 				><el-table
 					:data="projects"
 					style="
 						min-width: 200px;
 						box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
 					"
-					:max-height="maxHeight"
+					:height="maxHeight"
 					@cell-click="changeItem"
 					:row-class-name="getRowClass"
-					:key="tableKey"
 				>
 					<el-table-column
-						prop="projectDetail.projectName"
+						prop="projectName"
 						label="项目名称"
-						min-width="200"
-					/> </el-table
-			></el-col>
-			<el-col :span="18">
+						min-width="100"
+					>
+						<template #default="scope">
+							<div style="text-wrap: nowrap">
+								<el-icon
+									v-show="currentItem === scope.row.id"
+									style="color: green"
+									><DArrowRight /></el-icon
+								>&nbsp;
+								<el-icon
+									v-show="scope.row.isScore"
+									style="color: green"
+									><SuccessFilled
+								/></el-icon>
+								<el-icon
+									v-show="!scope.row.isScore"
+									style="color: red"
+									><CircleCloseFilled /></el-icon
+								>&nbsp;
+								<span>{{ scope.row.projectName }}</span>
+							</div>
+						</template>
+					</el-table-column>
+				</el-table>
+				<el-pagination
+					style="margin-top: 10px"
+					:total="pageTotal"
+					:current-page="projectParams.pagnNum"
+					:page-size="projectParams.pageSize"
+					@current-change="handlePageChange"
+				/>
+			</el-col>
+			<el-col :span="15">
 				<div class="image-container" :style="{ height: maxHeight }">
-					<VuePdfEmbed ref="pdfRef" :source="igpath"> </VuePdfEmbed>
+					<div style="width: 200px; overflow: hidden">
+						{{ currentItemPdf }}
+					</div>
+
+					<VuePdfEmbed :source="currentItemPdf"> </VuePdfEmbed>
 				</div>
 			</el-col>
-		</el-row>
-		<el-row :gutter="10" class="custom-row">
-			<el-col :span="12">
-				<TableIntefrals
-					:criteria="criteria"
-					:baseScore="baseScore"
-					@update:criteria="criteria = $event"
-					@update:totalScore="finalScore = $event"
-				></TableIntefrals
-			></el-col>
-			<el-col :span="12">
-				<el-input
-					v-model="textarea"
-					:rows="10"
-					type="textarea"
-					placeholder="输入项目评阅建议"
-				/>
-				<div class="button-container">
-					<el-button type="success" @click="handleAudits(1)"
-						>保存评阅结果</el-button
-					>
-				</div>
+			<el-col :span="5">
+				<el-row :gutter="10">
+					<TableIntefrals
+						:criteria="criteria"
+						:baseScore="baseScore"
+						@update:criteria="criteria = $event"
+						@update:totalScore="finalScore = $event"
+					></TableIntefrals>
+				</el-row>
+				<el-row :gutter="10">
+					<el-input
+						v-model="remark"
+						:rows="10"
+						type="textarea"
+						placeholder="输入项目评阅建议"
+					/>
+					<div class="button-container">
+						<el-button type="success" @click="giveScore()"
+							>保存评阅结果</el-button
+						>
+					</div>
+				</el-row>
 			</el-col>
 		</el-row>
 
@@ -144,7 +241,10 @@ const finalScore = ref(baseScore.value);
 
 <style scoped lang="less">
 .expert-review-container {
+	height: 100%;
+	width: 100%;
 	padding: 20px;
+	background-color: #e6f4ea;
 	.expert-review-title {
 		font-size: 24px;
 		font-weight: bold;
@@ -157,7 +257,7 @@ const finalScore = ref(baseScore.value);
 	.image-container {
 		width: 100%; /* 限定外容器宽度为100% */
 		overflow-y: auto; /* 允许超出部分滚动 */
-		box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+		// box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
 		.vue-pdf-embed {
 			width: 98%;
 		}
