@@ -1,7 +1,6 @@
 <script setup>
 import { useDynamicHeight } from '@/utils/tableUtils.js';
-import { ref } from 'vue';
-let tableHeight = useDynamicHeight(100);
+const tableHeight = useDynamicHeight(100);
 import { useMyLoginStore } from '../../../stores/myLoginStore';
 const myLoginStore = useMyLoginStore();
 const currentCollege = myLoginStore.userInfo.college;
@@ -11,9 +10,9 @@ const currentCollege = myLoginStore.userInfo.college;
 	<div class="college-project-settings">
 		<el-header>
 			<el-row :gutter="10">
-				<el-col :span="6"
-					><h1>{{ currentCollege }}项目表</h1></el-col
-				>
+				<el-col :span="6">
+					<h1>{{ currentCollege }}院级评审</h1>
+				</el-col>
 			</el-row>
 		</el-header>
 		<el-main :style="`height: ${tableHeight}px;`">

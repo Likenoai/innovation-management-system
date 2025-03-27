@@ -254,8 +254,8 @@ export const mockFormData = {
 	],
 	projectAdvisors: [
 		{
-			name: '张教授',
-			personnelCode: 'T1001',
+			name: '老师',
+			personnelCode: 'teacher',
 			college: '计算机学院',
 			position: '第一导师',
 			researchTopic: '网络安全攻防技术',

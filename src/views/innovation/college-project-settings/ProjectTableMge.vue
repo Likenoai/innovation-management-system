@@ -2,8 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import * as contestApi from '@/api/contestApi.js'; // 确保路径正确
-import { ElMessage, progressProps } from 'element-plus';
-import { generateProjectData } from '@/utils/mock/exoertsAssignMock.js';
+import { ElMessage } from 'element-plus';
 import { useDynamicHeight } from '@/utils/tableUtils.js';
 import { Search } from '@element-plus/icons-vue';
 // 在脚本部分顶部引入工具函数
@@ -11,8 +10,8 @@ import { formateTime } from '@/utils/dateUtils';
 const router = useRouter();
 const loading = ref(false);
 const projectList = ref([]);
-let tableHeight = useDynamicHeight(260);
-let paging = ref({
+const tableHeight = useDynamicHeight(260);
+const paging = ref({
 	pageNum: 1,
 	pageSize: 30,
 	total: 0,
@@ -26,22 +25,11 @@ const handleSearch = () => {
 	getCollegeProjectList();
 };
 
-const handleTimeChange = () => {
-	paging.value.pageNum = 1; // 重置为第一页
-	getCollegeProjectList();
-};
-
 // 在模拟数据部分也添加排序
 onMounted(() => {
 	getCollegeProjectList();
-	// projectList.value = generateProjectData(30).sort((a, b) => {
-	// 	const orderA = a.projectVersion?.reviewOrder ?? Infinity;
-	// 	const orderB = b.projectVersion?.reviewOrder ?? Infinity;
-	// 	return orderA - orderB;
-	// });
 });
 const handleView = (project) => {
-	console.log('project:', project);
 	router.push({
 		name: 'UploadInnovation',
 		params: { projectId: project.projectDetail.id },
@@ -58,19 +46,18 @@ const handlePageChange = (page) => {
 	getCollegeProjectList();
 };
 
-let statusParams = ref({
+const statusParams = ref({
 	projectId: '',
 	detailId: '',
 	reviewStatus: '',
 });
-let orderParams = ref({
+const orderParams = ref({
 	projectId: '',
 	detailId: '',
 	reviewOrder: '',
 	reviewStatus: '',
 });
 const handleStatusParams = (row) => {
-	console.log('row:', row);
 	statusParams.value = {
 		projectId: row.projectVersion.projectId,
 		detailId: row.projectVersion.detailId,
@@ -79,7 +66,6 @@ const handleStatusParams = (row) => {
 	handleStatusOrder(false);
 };
 const handleOrderParams = (row) => {
-	console.log(row);
 	orderParams.value = {
 		projectId: row.projectVersion.projectId,
 		detailId: row.projectVersion.detailId,
@@ -88,18 +74,15 @@ const handleOrderParams = (row) => {
 	};
 	// 新增排序交换逻辑
 	const oldOrder = row.projectVersion._originalOrder; // 保存原始排序值
-	console.log('oldOrder:', oldOrder);
 	handleStatusOrder(true).then(() => {
 		// 在接口调用成功后，查找需要交换的条目
 		const swapItem = projectList.value.find(
 			(item) =>
 				item.projectVersion?.reviewOrder !== null && // 新增非空判断
 				item.projectVersion?.reviewOrder !== Infinity && // 新增非无穷判断
-				item.projectVersion?.reviewOrder ===
-					orderParams.value.reviewOrder &&
-				item.projectVersion.detailId !== orderParams.value.detailId
+				item.projectVersion?.reviewOrder === orderParams.value.reviewOrder &&
+				item.projectVersion.detailId !== orderParams.value.detailId,
 		);
-		console.log('swapItem', swapItem);
 		if (swapItem) {
 			swapItem.projectVersion.reviewOrder = oldOrder;
 			contestApi.review({
@@ -154,38 +137,31 @@ const sortProjectList = (list) => {
 
 const getCollegeProjectList = async () => {
 	loading.value = true;
-	try {
-		await contestApi
-			.getProjectsByCollege({
-				college: currentCollege.value,
-				pageNum: paging.value.pageNum,
-				pageSize: paging.value.pageSize,
-				keyword: searchKeyword.value, // 新增搜索参数
-				startTime: selectedTimeRange.value?.[0], // 开始时间
-				endTime: selectedTimeRange.value?.[1], // 结束时间
-			})
-			.then((res) => {
-				projectList.value = sortProjectList(res.data.recordList); // 使用排序方法
-				paging.value.total = res.data.total;
-			})
-			.catch((err) => {
-				ElMessage.error({
-					message: '获取项目列表失败:' + err.msg,
-					duration: 3000,
-				});
+	await contestApi
+		.getProjectsByCollege({
+			college: currentCollege.value,
+			pageNum: paging.value.pageNum,
+			pageSize: paging.value.pageSize,
+			keyword: searchKeyword.value, // 新增搜索参数
+			startTime: selectedTimeRange.value?.[0], // 开始时间
+			endTime: selectedTimeRange.value?.[1], // 结束时间
+		})
+		.then((res) => {
+			projectList.value = sortProjectList(res.data.recordList); // 使用排序方法
+			paging.value.total = res.data.total;
+		})
+		.catch((err) => {
+			ElMessage.error({
+				message: '获取项目列表失败:' + err.msg,
+				duration: 3000,
 			});
-	} catch (error) {
-		ElMessage.error({
-			message: '获取项目列表出错，请稍后重试',
-			duration: 3000,
+		})
+		.finally(() => {
+			loading.value = false;
 		});
-		console.error('获取项目列表错误:', error);
-	} finally {
-		loading.value = false;
-	}
 };
 
-const goSetting = (row) => {
+const goSetting = () => {
 	router.push({
 		name: 'settings-mges',
 	});
@@ -221,20 +197,11 @@ const popupElMessage = (row) => {
 					@keyup.enter="handleSearch"
 				>
 					<template #prefix>
-						<el-icon><search /></el-icon>
+						<el-icon><search></search></el-icon>
 					</template>
 				</el-input>
 				<el-button type="primary">导出</el-button>
 				搜索和导出暂时未完成
-				<!-- <el-date-picker
-					v-model="selectedTimeRange"
-					type="daterange"
-					range-separator="-"
-					start-placeholder="开始日期"
-					end-placeholder="结束日期"
-					value-format="YYYY-MM-DD"
-					@change="handleTimeChange"
-				/> -->
 			</el-col>
 
 			<el-col :span="6" style="display: flex; justify-content: flex-end">
@@ -254,6 +221,11 @@ const popupElMessage = (row) => {
 				:min-width="180"
 			/>
 			<el-table-column
+				prop="projectVersion.reviewStatus"
+				label="项目状态"
+				:min-width="180"
+			/>
+			<el-table-column
 				prop="projectDetail.projectType"
 				label="项目类型"
 				:min-width="120"
@@ -268,15 +240,12 @@ const popupElMessage = (row) => {
 				<template #default="scope">
 					<div
 						:style="
-							scope.row.projectDetail?.projectCategory ===
-							'创新训练项目'
+							scope.row.projectDetail?.projectCategory === '创新训练项目'
 								? 'color: #95d475'
-								: scope.row.projectDetail?.projectCategory ===
-										'创业训练项目' ||
-								  scope.row.projectDetail?.projectCategory ===
-										'创业实践项目'
-								? 'color: #eebe77'
-								: 'color: #f56c6c'
+								: scope.row.projectDetail?.projectCategory === '创业训练项目' ||
+									  scope.row.projectDetail?.projectCategory === '创业实践项目'
+									? 'color: #eebe77'
+									: 'color: #f56c6c'
 						"
 					>
 						{{ scope.row.projectDetail.projectCategory }}
@@ -322,7 +291,8 @@ const popupElMessage = (row) => {
 				label="院级评分"
 				:min-width="150"
 				align="center"
-				><template #default="scope">
+			>
+				<template #default="scope">
 					<div style="color: #f56c6c">
 						{{ scope.row.collegeAverageScore || '待评分' }}
 					</div>
@@ -347,7 +317,7 @@ const popupElMessage = (row) => {
 								handleOrderParams(scope.row);
 							}
 						"
-					></el-input-number>
+					/>
 				</template>
 			</el-table-column>
 			<el-table-column
@@ -358,31 +328,13 @@ const popupElMessage = (row) => {
 				prop="collegeAverageScore"
 			>
 				<template #default="scope">
-					<el-button
-						type="primary"
-						text
-						@click="handleView(scope.row)"
-					>
+					<el-button type="primary" text @click="handleView(scope.row)">
 						详情
 					</el-button>
 					<el-switch
-						:model-value="
-							scope.row.projectVersion?.reviewStatus === 1
-						"
-						@update:model-value="
-							(val) => {
-								scope.row.projectVersion =
-									scope.row.projectVersion || {};
-								scope.row.projectVersion.reviewStatus = val
-									? 1
-									: 6;
-								handleStatusParams(scope.row);
-							}
-						"
+						:model-value="scope.row.projectVersion?.reviewStatus === 1"
 						:disabled="
-							![0, 1, 6].includes(
-								scope.row.projectVersion?.reviewStatus
-							)
+							![0, 1, 6].includes(scope.row.projectVersion?.reviewStatus)
 						"
 						active-text="打回"
 						style="
@@ -390,31 +342,33 @@ const popupElMessage = (row) => {
 							--el-switch-on-color: #ff4949;
 							--el-color-primary: #ff4949;
 						"
-					></el-switch>
-					&nbsp;&nbsp;
-					<el-switch
-						:disabled="!scope.row.collegeAverageScore"
-						:model-value="
-							scope.row.projectVersion?.reviewStatus === 2
-						"
 						@update:model-value="
 							(val) => {
-								scope.row.projectVersion =
-									scope.row.projectVersion || {};
-								scope.row.projectVersion.reviewStatus = val
-									? 2
-									: 6;
+								scope.row.projectVersion = scope.row.projectVersion || {};
+								scope.row.projectVersion.reviewStatus = val ? 1 : 6;
 								handleStatusParams(scope.row);
 							}
 						"
+					/>
+					&nbsp;&nbsp;
+					<el-switch
+						:disabled="!scope.row.collegeAverageScore"
+						:model-value="scope.row.projectVersion?.reviewStatus === 2"
 						active-text="推荐"
 						:style="`
 							--el-switch-off-color: ${scope.row.collegeAverageScore ? '#409eff' : '#dcdfe6'};
 							--el-switch-on-color:  #13ce66;
 							--el-color-primary: #13ce66;
 						`"
+						@update:model-value="
+							(val) => {
+								scope.row.projectVersion = scope.row.projectVersion || {};
+								scope.row.projectVersion.reviewStatus = val ? 2 : 6;
+								handleStatusParams(scope.row);
+							}
+						"
 						@click="popupElMessage(scope.row)"
-					></el-switch>
+					/>
 				</template>
 			</el-table-column>
 			<!-- 可以根据需要添加更多列 -->
@@ -424,10 +378,10 @@ const popupElMessage = (row) => {
 				:current-page="paging.pageNum"
 				:page-size="paging.pageSize"
 				:total="paging.total"
-				@current-change="handlePageChange"
 				layout="total, prev, pager, next, jumper"
 				class="pagination"
-			></el-pagination>
+				@current-change="handlePageChange"
+			/>
 		</el-row>
 	</div>
 </template>

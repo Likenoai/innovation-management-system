@@ -130,11 +130,13 @@ const updateProjectApiFunction = async (param) => {
 };
 export const updateProject = withErrorHandling(updateProjectApiFunction);
 
-//
+// 设定申请书截至时间
 const assignApplyTimeApiFunction = async (param) => {
-	return axios.post(`/api/contest/assignApplyTime`, {
-		...param,
-	});
+	return axios.get(
+		`/api/contest/assignApplyTime${
+			param ? '?' + new URLSearchParams(param).toString() : ''
+		}`
+	);
 };
 export const assignApplyTimeApi = withErrorHandling(assignApplyTimeApiFunction);
 
@@ -168,4 +170,27 @@ const getScoreProjectsByCollegeApiFunction = async (param) => {
 };
 export const getScoreProjectsByCollegeApi = withErrorHandling(
 	getScoreProjectsByCollegeApiFunction
+);
+
+// 校级评审获取项目的接口: 除了-2-10110 所有项目详情，第一导师，校级评分，状态
+const getSchoolProjectsApiFunction = async (param) => {
+	return axios.get(
+		`/api/contest/getSchoolProjects${
+			param ? '?' + new URLSearchParams(param).toString() : ''
+		}`
+	);
+};
+export const getSchoolProjectsApi = withErrorHandling(
+	getSchoolProjectsApiFunction
+);
+
+const getScoreByDetailIdApiFunction = async (param) => {
+	return axios.get(
+		`/api/contest/scoreByDetailId${
+			param ? '?' + new URLSearchParams(param).toString() : ''
+		}`
+	);
+};
+export const getScoreByDetailIdApi = withErrorHandling(
+	getScoreByDetailIdApiFunction
 );

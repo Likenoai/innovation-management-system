@@ -12,7 +12,7 @@ const getStudentsApiFunction = async ({
 	grade,
 	educationLevel,
 }) => {
-	let res = await axios.get(
+	const res = await axios.get(
 		`/api/staff/getStudents?pageNum=${pageNum}&college=${college}&name=${name}&studentId=${studentId}&majorName=${majorName}&grade=${grade}&educationLevel=${educationLevel}&pageSize=${pageSize}`,
 		{
 			headers: {
@@ -32,7 +32,7 @@ const getTeachersApiFunction = async ({
 	name,
 	currentUnit,
 }) => {
-	let res = await axios.get(
+	const res = await axios.get(
 		`/api/staff/getTeachers?pageNum=${pageNum}&pageSize=${pageSize}&personnelCode=${personnelCode}&name=${name}&currentUnit=${currentUnit}`,
 		{
 			headers: {
@@ -46,7 +46,7 @@ export const getTeachersApi = withErrorHandling(getTeachersApiFunction);
 
 // 获取专家列表
 const getExpertsApiFunction = async ({ pageNum, pageSize }) => {
-	let res = await axios.get(
+	const res = await axios.get(
 		`/api/staff/getExperts?pageNum=${pageNum}&pageSize=${pageSize}`,
 		{
 			headers: {
@@ -60,7 +60,7 @@ export const getExpertsApi = withErrorHandling(getExpertsApiFunction);
 
 // 获取专家列表
 const getManagersApiFunction = async ({ pageNum, pageSize }) => {
-	let res = await axios.get(
+	const res = await axios.get(
 		`/api/staff/getManagers?pageNum=${pageNum}&pageSize=${pageSize}`,
 		{
 			headers: {
@@ -74,7 +74,7 @@ export const getManagersApi = withErrorHandling(getManagersApiFunction);
 
 // 获取下载模板
 const getTemplateApiFunction = async (param) => {
-	let res = await axios.get('/api/staff/getTemplate?type=' + param.type, {
+	const res = await axios.get('/api/staff/getTemplate?type=' + param.type, {
 		headers: {
 			'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
 		},
@@ -85,7 +85,7 @@ export const getTemplateApi = withErrorHandling(getTemplateApiFunction);
 
 // 重置密码
 const resetPasswordApiFunction = async ({ id, type }) => {
-	let res = await axios.post(
+	const res = await axios.post(
 		'/api/staff/reset/' + id,
 		{ type },
 		{
@@ -100,7 +100,7 @@ export const resetPasswordApi = withErrorHandling(resetPasswordApiFunction);
 
 // 所有学生的学院
 const getStuCollegesApiFunction = async () => {
-	let res = await axios.get('/api/staff/stuColleges', {
+	const res = await axios.get('/api/staff/stuColleges', {
 		headers: {
 			'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
 		},
@@ -111,7 +111,7 @@ export const getStuCollegesApi = withErrorHandling(getStuCollegesApiFunction);
 
 // 用户详情
 const getInfoApiFunction = async () => {
-	let res = await axios.get('/api/staff/info', {
+	const res = await axios.get('/api/staff/info', {
 		headers: {
 			'SC-TOKEN': localStorage.getItem('token'), // 假设从本地存储获取 token
 		},
@@ -122,9 +122,18 @@ export const getInfoApi = withErrorHandling(getInfoApiFunction);
 
 // 用户详情
 const getCollegeExpertsApiFunction = async (param) => {
-	let res = await axios.get('/api/staff/collegeExperts', param);
+	const res = await axios.get('/api/staff/collegeExperts', param);
 	return res;
 };
 export const getCollegeExpertsApi = withErrorHandling(
 	getCollegeExpertsApiFunction
+);
+
+// 用户详情
+const getSchoolExpertsApiFunction = async (param) => {
+	const res = await axios.get('/api/staff/schoolExperts', param);
+	return res;
+};
+export const getSchoolExpertsApi = withErrorHandling(
+	getSchoolExpertsApiFunction
 );

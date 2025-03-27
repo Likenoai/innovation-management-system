@@ -23,7 +23,7 @@ const projectParams = ref({
 	status: '', //0为打分 1已打分
 });
 projectParams.value.college = myLoginStore.userInfo.college;
-let pageTotal = ref(0);
+const pageTotal = ref(0);
 
 import { withFirstCall } from '@/utils/index.js';
 // 获取待评分项目列表
@@ -56,7 +56,7 @@ const getProjectList = withFirstCall(async (isFirstCall) => {
 		pageTotal.value = (res1.data?.total || 0) + (res2.data?.total || 0);
 		if (isFirstCall) currentItem.value = projects.value[0].id;
 	} catch (error) {
-		console.error('获取项目列表失败:', error);
+		ElMessage.error('获取项目列表失败' + error);
 	}
 });
 const handlePageChange = (num) => {
@@ -77,23 +77,56 @@ onMounted(() => {
 
 // pdf文件S
 import igpath from '@/assets/基于改进CBAM注意力机制风扇异常状况的识别.pdf';
-let currentItem = ref(0);
-let currentItemPdf = ref(igpath);
+const currentItem = ref(0);
+const currentItemPdf = ref(igpath);
 function changeItem(row) {
-	if (currentItem.value == row.id) {
+	if (currentItem.value === row.id) {
 		return;
 	}
 	clearParam();
+
 	currentItem.value = row.id;
+	getProjectDetail(currentItem.value);
 	projects.value.forEach((item) => {
-		if (item.id == currentItem.value) {
+		if (item.id === currentItem.value) {
 			currentItemPdf.value = item.attachment;
 			return;
 		}
 	});
 }
+// 根据id获取项目的详情
+const getProjectDetail = async (id) => {
+	const res = await contestApi.getScoreByDetailIdApi({ detailId: id });
+	if (res.data && res.data.length > 0) {
+		criteria.value = res.data[0].reviewDetail
+			? JSON.parse(res.data[0].reviewDetail)
+			: [
+					{ name: '文本规范', options: [2, 4, 5], selected: null },
+					{ name: '逻辑清晰', options: [2, 4, 5], selected: null },
+					{ name: '组织完善', options: [2, 4, 5], selected: null },
+					{ name: '实践合理', options: [2, 4, 5], selected: null },
+					{ name: '社会价值', options: [2, 4, 6], selected: null },
+					{ name: '前景广阔', options: [2, 4, 6], selected: null },
+					{ name: '创新意义', options: [2, 4, 6, 8], selected: null },
+				];
+		remark.value = res.data[0].reviewDescribe || '';
+	} else {
+		criteria.value = [
+			{ name: '文本规范', options: [2, 4, 5], selected: null },
+			{ name: '逻辑清晰', options: [2, 4, 5], selected: null },
+			{ name: '组织完善', options: [2, 4, 5], selected: null },
+			{ name: '实践合理', options: [2, 4, 5], selected: null },
+			{ name: '社会价值', options: [2, 4, 6], selected: null },
+			{ name: '前景广阔', options: [2, 4, 6], selected: null },
+			{ name: '创新意义', options: [2, 4, 6, 8], selected: null },
+		];
+		remark.value = '';
+	}
+	console.log('res:', res);
+};
 
 import TableIntefrals from '../../components/innovation/TableIntefrals.vue';
+import { ElMessage } from 'element-plus';
 // **评分数据（由父组件管理）**
 const baseScore = ref(60);
 const criteria = ref([
@@ -110,12 +143,11 @@ const clearParam = () => {
 	remark.value = '';
 };
 // **存储最终的总分**
-let finalScore = ref(0);
-let remark = ref('');
+const finalScore = ref(0);
+const remark = ref('');
 const giveScore = async () => {
-	let param = projects.value.find((item) => item.id == currentItem.value);
-	console.log('param:', param);
-	let res = await contestApi
+	const param = projects.value.find((item) => item.id === currentItem.value);
+	await contestApi
 		.giveScoreApi({
 			detailId: param.id,
 			projectId: param.projectId,
@@ -125,9 +157,9 @@ const giveScore = async () => {
 			reviewDescribe: remark.value,
 		})
 		.then(() => {
+			ElMessage.success('打分成功');
 			getProjectList();
 		});
-	console.log('res:', res);
 };
 
 // 返回首页S
@@ -141,53 +173,41 @@ const goHome = () => {
 <template>
 	<div class="expert-review-container">
 		<el-row :gutter="10">
-			<el-col :span="12"
-				><h1 class="expert-review-title">专家盲审项目</h1></el-col
-			>
-			<el-col :span="6" align="end"
-				>评审结束时间：{{ collegeEndTime }}</el-col
-			>
-			<el-col :span="6" align="end"
-				><el-button type="primary" @click="goHome"
-					>返回首页</el-button
-				></el-col
-			>
+			<el-col :span="12">
+				<h1 class="expert-review-title">专家盲审项目</h1>
+			</el-col>
+			<el-col :span="6" align="end">评审结束时间：{{ collegeEndTime }}</el-col>
+			<el-col :span="6" align="end">
+				<el-button type="primary" @click="goHome">返回首页</el-button>
+			</el-col>
 		</el-row>
 
 		<el-row :gutter="40" class="custom-row">
-			<el-col :span="4"
-				><el-table
+			<el-col :span="4">
+				<el-table
 					:data="projects"
-					style="
-						min-width: 200px;
-						box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
-					"
+					style="min-width: 200px; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2)"
 					:height="maxHeight"
-					@cell-click="changeItem"
 					:row-class-name="getRowClass"
+					@cell-click="changeItem"
 				>
-					<el-table-column
-						prop="projectName"
-						label="项目名称"
-						min-width="100"
-					>
+					<el-table-column prop="projectName" label="项目名称" min-width="100">
 						<template #default="scope">
 							<div style="text-wrap: nowrap">
 								<el-icon
 									v-show="currentItem === scope.row.id"
 									style="color: green"
-									><DArrowRight /></el-icon
-								>&nbsp;
-								<el-icon
-									v-show="scope.row.isScore"
-									style="color: green"
-									><SuccessFilled
-								/></el-icon>
-								<el-icon
-									v-show="!scope.row.isScore"
-									style="color: red"
-									><CircleCloseFilled /></el-icon
-								>&nbsp;
+								>
+									<DArrowRight />
+								</el-icon>
+								&nbsp;
+								<el-icon v-show="scope.row.isScore" style="color: green">
+									<SuccessFilled />
+								</el-icon>
+								<el-icon v-show="!scope.row.isScore" style="color: red">
+									<CircleCloseFilled />
+								</el-icon>
+								&nbsp;
 								<span>{{ scope.row.projectName }}</span>
 							</div>
 						</template>
@@ -207,17 +227,17 @@ const goHome = () => {
 						{{ currentItemPdf }}
 					</div>
 
-					<VuePdfEmbed :source="currentItemPdf"> </VuePdfEmbed>
+					<VuePdfEmbed :source="currentItemPdf" />
 				</div>
 			</el-col>
 			<el-col :span="5">
 				<el-row :gutter="10">
 					<TableIntefrals
 						:criteria="criteria"
-						:baseScore="baseScore"
+						:base-score="baseScore"
 						@update:criteria="criteria = $event"
-						@update:totalScore="finalScore = $event"
-					></TableIntefrals>
+						@update:total-score="finalScore = $event"
+					/>
 				</el-row>
 				<el-row :gutter="10">
 					<el-input
@@ -227,9 +247,9 @@ const goHome = () => {
 						placeholder="输入项目评阅建议"
 					/>
 					<div class="button-container">
-						<el-button type="success" @click="giveScore()"
-							>保存评阅结果</el-button
-						>
+						<el-button type="success" @click="giveScore()">
+							保存评阅结果
+						</el-button>
 					</div>
 				</el-row>
 			</el-col>

@@ -1,22 +1,28 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch } from 'vue';
-import * as staffApi from '@/api/staffApi.js';
 import { ElMessage } from 'element-plus';
 import { useMyLoginStore } from '../../../stores/myLoginStore';
 import { usePubliceStore } from '../../../stores/publiceStore';
+import { useDynamicHeight } from '@/utils/tableUtils.js';
 import * as staticApi from '@/api/staticApi.js';
+import * as staffApi from '@/api/staffApi.js';
 import * as contestApi from '@/api/contestApi.js';
 // 时间管理数据
 
 const myLoginStore = useMyLoginStore();
 const publiceStore = usePubliceStore();
 
-// 评审管理数据
-let college = myLoginStore.userInfo.college;
-let codeKeyCollegeEnd = 'all_college_end_time';
-let collegeEndTime = ref('');
-// 初始化数据 S
+// 时间管理S
 //#region
+// #region 院级评审截至时间
+
+const college = myLoginStore.userInfo.college;
+const codeKeyCollegeEnd = 'all_college_end_time';
+const collegeEndTime = ref('');
+
+/**
+ * 获取院级评审截止时间
+ */
 const getCollegeEndTime = async () => {
 	const response = await staticApi.getDataByKeyApi(codeKeyCollegeEnd);
 	collegeEndTime.value = response.data;
@@ -26,60 +32,146 @@ const getCollegeEndTime = async () => {
 onMounted(() => {
 	getCollegeEndTime();
 });
-//#endregion
-// 初始化数据 E
 
-// 时间管理方法 S
+/**
+ * 修改院级评审截止时间
+ */
 const updateCollegeEndTime = async () => {
-	let res = await staticApi.updateDataApi(
+	await staticApi.updateDataApi(
 		{
 			codeKey: codeKeyCollegeEnd,
 			codeValue: collegeEndTime.value,
 		},
 		{
 			successMsg: '院级评审截止时间修改成功',
-		}
+		},
 	);
 };
-// 时间管理方法 E
+// #endregion
+
+//	#region 校级评审开始and结束时间
+const codeKeySchoolStart = 'school_review_start_time';
+const codeKeySchoolEnd = 'school_review_end_time';
+const schoolStartTime = ref('');
+const schoolEndTime = ref('');
+/**
+ * 获取校级评审开始时间和结束时间
+ */
+const getShooolTime = async () => {
+	// 使用 Promise.all 并行请求
+	const [schoolStartTimeRes, schoolEndTimeRes] = await Promise.all([
+		staticApi.getDataByKeyApi(codeKeySchoolStart),
+		staticApi.getDataByKeyApi(codeKeySchoolEnd),
+	]);
+	schoolStartTime.value = schoolStartTimeRes.data;
+	schoolEndTime.value = schoolEndTimeRes.data;
+};
+onMounted(() => {
+	getShooolTime();
+});
+
+/**
+ * 更新校级评审时间配置
+ * @async
+ * @param {'start' | 'end'} type - 时间类型：'start'更新开始时间，其他值更新结束时间
+ * @throws {Error} 当API调用失败时抛出错误
+ * @example
+ * // 更新开始时间
+ * await updateSchoolTime('start')
+ * // 更新结束时间
+ * await updateSchoolTime('end')
+ */
+const updateSchoolTime = async (type) => {
+	if (type === 'start') {
+		await staticApi.updateDataApi({
+			codeKey: codeKeySchoolStart,
+			codeValue: schoolStartTime.value,
+		});
+	} else {
+		await staticApi.updateDataApi({
+			codeKey: codeKeySchoolEnd,
+			codeValue: schoolEndTime.value,
+		});
+	}
+};
+//	#endregion 校级评审开始时间
+
+//#endregion
+// 时间管理 E
+
+//#region 学院项目数量管理S
+const collegeProjectNum = ref([]); // 存储学院项目数量数据
+const getCollegeProjectNum = () => {
+	staticApi.getCollegeProjectNumApi().then((item) => {
+		collegeProjectNum.value = item.data;
+	});
+};
+onMounted(() => {
+	getCollegeProjectNum();
+});
+/**
+ * 处理项目数量变化
+ * @param {Object} item - 项目数量项
+ */
+const handleNumberChange = (() => {
+	let timer = null;
+	let lastItem = null;
+
+	return async (item) => {
+		// 保存最新修改项
+		lastItem = { ...item };
+
+		// 清除之前的定时器
+		if (timer) clearTimeout(timer);
+
+		// 设置新的防抖定时器（500ms）
+		timer = setTimeout(async () => {
+			await initStatic({
+				codeKey: 'project_num' + lastItem.college,
+				codeValue: lastItem.number,
+			});
+			await staticApi
+				.updateDataApi(
+					{
+						codeKey: 'project_num' + lastItem.college,
+						codeValue: lastItem.number,
+					},
+					{
+						successMsg: `${lastItem.college}最大项目数量修改成功`,
+					},
+				)
+				.finally(async () => {
+					await getCollegeProjectNum();
+					timer = null;
+				});
+		}, 500);
+	};
+})();
+const tableHeightCollegeProject = useDynamicHeight(340);
+
+//#endregion
 
 // 评审专家管理 S
 //#region
 // 处理分页
-let expertPaging = ref({
+const expertPaging = ref({
 	pageNum: 1,
 	pageSize: 10,
 	total: 0,
 });
 const experts = ref([]); // 存储所有专家
-let reviewExperts = ref([]); // 存储评审专家
+const reviewExperts = ref([]); // 存储评审专家
 const getExperts = async () => {
-	const response = await staffApi.getCollegeExpertsApi({
-		college: myLoginStore.userInfo.college,
+	await staffApi.getSchoolExpertsApi().then((item) => {
+		experts.value = item.data;
 	});
-
-	expertPaging.value.total = response.data.length;
-	const res = await contestApi.getAssignExpertScoreApi();
-	// 处理 null 值并创建 ID 映射表
-	const resData = res.data || [];
-	const idMap = new Set(resData);
-	// 通过映射表快速判断
-	experts.value = response.data.map((expert) => ({
-		...expert,
-		isCancel: !idMap.has(expert.personnelCode), // O(1) 时间复杂度查询
-	}));
-	reviewExperts.value = experts.value.filter((expert) => !expert.isCancel);
 };
 //#endregion
 /**
  * 处理分页变化
  * @param {number} page - 当前页码
  */
-const handlePageChange = (page) => {
-	expertPaging.value.pageNum = page;
-	// 这里可以根据当前页码和每页大小来更新表格数据
-	getExperts();
-};
+
 onMounted(() => {
 	getExperts();
 });
@@ -89,14 +181,14 @@ const assignToExpertScore = async (row) => {
 		personnelCode: row.personnelCode,
 		isCancel: row.isCancel,
 	});
-	if (res.code == 500) {
+	if (res.code === 500) {
 		ElMessage.error(res.msg);
 		row.isCancel = !row.isCancel;
 	}
 };
 
 import { withFirstCall } from '@/utils/index.js';
-let reviewProject = ref([]);
+const reviewProject = ref([]);
 // 学院管理员获取院级/校级 打分/未打分的项目集合
 const getScoreProject = withFirstCall(async (isFirstCall) => {
 	staticApi.updateDataApi(
@@ -106,7 +198,7 @@ const getScoreProject = withFirstCall(async (isFirstCall) => {
 		},
 		{
 			successMsg: null,
-		}
+		},
 	);
 	const res1 = await contestApi.getScoreProjectsByCollegeApi({
 		type: '0', // 0 院级 1 校级
@@ -118,7 +210,7 @@ const getScoreProject = withFirstCall(async (isFirstCall) => {
 		status: '0', // 0 未打分 1 已打分
 		college: college,
 	});
-	let res1Data = res1.data.recordList || [];
+	const res1Data = res1.data.recordList || [];
 	const res = res1Data.concat(res2.data.recordList);
 	reviewProject.value = res;
 	if (isAllot.value) {
@@ -146,13 +238,12 @@ const handleSpan = ({ columnIndex, rowIndex }) => {
 	return { rowspan: 1, colspan: 1 };
 };
 
-import { useDynamicHeight } from '@/utils/tableUtils.js';
-let tableHeight = useDynamicHeight(360);
-let isAllot = ref(true);
+const tableHeight = useDynamicHeight(360);
+const isAllot = ref(true);
 // 除了是否分配
 const getAllot = async () => {
-	let key = 'allot' + college;
-	const res = await staticApi.getDataByKeyApi(key).then((res) => {
+	const key = 'allot' + college;
+	await staticApi.getDataByKeyApi(key).then((res) => {
 		switch (res.data) {
 			case null:
 				staticApi
@@ -182,7 +273,7 @@ onMounted(() => {
 import { useRouter } from 'vue-router';
 const router = useRouter();
 // 路由跳转
-const goProjectTableMgs = (row) => {
+const goProjectTableMgs = () => {
 	router.push({
 		name: 'school-project-table-Mge',
 	});
@@ -190,13 +281,12 @@ const goProjectTableMgs = (row) => {
 
 // 学院项目管理S
 //#region
-import { isExist, initStatic } from '../../../utils/staticUtils';
-import { errorMessages } from 'vue/compiler-sfc';
+import { initStatic } from '../../../utils/staticUtils';
 
-let projectCount = ref(0); // 项目数量
-let selectedCollege = ref(''); // 选中的学院
-let allCollege = reactive(publiceStore.allCollege); // 所有学院
-let projectNumCodeKey = computed(() => 'project_num' + selectedCollege.value);
+const projectCount = ref(0); // 项目数量
+const selectedCollege = ref(''); // 选中的学院
+const allCollege = reactive(publiceStore.allCollege); // 所有学院
+const projectNumCodeKey = computed(() => 'project_num' + selectedCollege.value);
 
 // 监听 selectedCollege 变化
 watch(selectedCollege, async (newVal) => {
@@ -212,7 +302,7 @@ const updateProjectCount = async () => {
 		codeValue: 0,
 		codeName: `${selectedCollege.value}项目数量`,
 	});
-	const res = await staticApi.updateDataApi(
+	await staticApi.updateDataApi(
 		{
 			codeKey: projectNumCodeKey.value,
 			codeValue: projectCount.value,
@@ -220,7 +310,7 @@ const updateProjectCount = async () => {
 		{
 			successMsg: '项目数量修改成功',
 			errorMsg: '项目数量修改失败',
-		}
+		},
 	);
 };
 
@@ -230,48 +320,16 @@ onMounted(() => {
 //#endregion
 // 学院项目管理E
 
-// 校级评审开始时间S
-//#region
-let codeKeySchoolStart = 'school_review_start_time';
-let codeKeySchoolEnd = 'school_review_end_time';
-let schoolStartTime = ref('');
-let schoolEndTime = ref('');
-const getShooolTime = async () => {
-	const response1 = await staticApi.getDataByKeyApi(codeKeySchoolStart);
-	const response2 = await staticApi.getDataByKeyApi(codeKeySchoolEnd);
-	schoolStartTime.value = response1.data;
-	schoolEndTime.value = response2.data;
-	return response1, response2;
-};
-onMounted(() => {
-	getShooolTime();
-});
-const updateSchoolTime = async (type) => {
-	if (type == 'start') {
-		let res = await staticApi.updateDataApi({
-			codeKey: codeKeySchoolStart,
-			codeValue: schoolStartTime.value,
-		});
-	} else {
-		let res = await staticApi.updateDataApi({
-			codeKey: codeKeySchoolEnd,
-			codeValue: schoolEndTime.value,
-		});
-	}
-};
-//#endregion
-// 校级评审开始时间E
-
 // 重点领域S
 //#region
-let codeKeySpecial = 'special';
-let special = ref('');
+const codeKeySpecial = 'special';
+const special = ref('');
 //#endregion
 // 重点领域E
 
 // 校级专家权重管理 S
-let codeKeyExpertWeights = 'expert_weights';
-let expertWeights = ref({
+const codeKeyExpertWeights = 'expert_weights';
+const expertWeights = ref({
 	student: 30,
 	internal: 50,
 	external: 20,
@@ -297,7 +355,7 @@ const updateExpertWeights = async () => {
 		return;
 	}
 
-	const res = await staticApi.updateDataApi(
+	await staticApi.updateDataApi(
 		{
 			codeKey: 'expert_weights',
 			codeValue: `${expertWeights.value.student}，${expertWeights.value.internal}，${expertWeights.value.external}`,
@@ -305,7 +363,7 @@ const updateExpertWeights = async () => {
 		{
 			successMsg: '权重设置成功',
 			errorMsg: '权重设置失败',
-		}
+		},
 	);
 };
 </script>
@@ -323,7 +381,10 @@ const updateExpertWeights = async () => {
 				"
 			>
 				<!-- 时间管理 -->
-				<el-tab-pane label="时间管理">
+				<el-tab-pane
+					label="时间管理"
+					style="display: flex; justify-content: center; margin-top: 40px"
+				>
 					<el-form label-width="160px">
 						<el-form-item label="院级评审结束时间">
 							<el-date-picker
@@ -334,35 +395,14 @@ const updateExpertWeights = async () => {
 							/>
 							<el-button
 								style="margin-left: 10px"
-								@click="updateCollegeEndTime"
 								type="primary"
 								plain
-								>确定</el-button
+								@click="updateCollegeEndTime"
 							>
+								确定
+							</el-button>
 						</el-form-item>
 
-						<el-form-item label="学院项目数量">
-							<el-select
-								v-model="selectedCollege"
-								placeholder="请选择学院"
-								style="width: 200px; margin-right: 10px"
-							>
-								<el-option
-									v-for="college in allCollege"
-									:key="college"
-									:label="college"
-									:value="college"
-								/>
-							</el-select>
-							<el-input-number v-model="projectCount" :min="0" />
-							<el-button
-								style="margin-left: 10px"
-								type="primary"
-								plain
-								@click="updateProjectCount"
-								>确定</el-button
-							>
-						</el-form-item>
 						<el-form-item label="校级评审开始时间">
 							<el-date-picker
 								v-model="schoolStartTime"
@@ -372,11 +412,12 @@ const updateExpertWeights = async () => {
 							/>
 							<el-button
 								style="margin-left: 10px"
-								@click="updateSchoolTime('start')"
 								type="primary"
 								plain
-								>确定</el-button
+								@click="updateSchoolTime('start')"
 							>
+								确定
+							</el-button>
 						</el-form-item>
 						<el-form-item label="校级评审结束时间">
 							<el-date-picker
@@ -387,29 +428,45 @@ const updateExpertWeights = async () => {
 							/>
 							<el-button
 								style="margin-left: 10px"
-								@click="updateSchoolTime('end')"
 								type="primary"
 								plain
-								>确定</el-button
+								@click="updateSchoolTime('end')"
 							>
+								确定
+							</el-button>
 						</el-form-item>
 						<el-form-item label="重点领域">
-							<el-col :span="6"
-								><el-input
-									v-model="special"
-									placeholder="输入重点领域"
-								></el-input
-							></el-col>
+							<el-col :span="12">
+								<el-input v-model="special" placeholder="输入重点领域" />
+							</el-col>
 
 							<el-button
 								style="margin-left: 10px"
-								@click="updateSchoolTime('end')"
 								type="primary"
 								plain
-								>确定</el-button
+								@click="updateSchoolTime('end')"
 							>
+								确定
+							</el-button>
 						</el-form-item>
 					</el-form>
+				</el-tab-pane>
+				<el-tab-pane label="学院项目数量管理">
+					<el-table
+						:data="collegeProjectNum"
+						:height="tableHeightCollegeProject"
+						stripe
+					>
+						<el-table-column prop="college" label="学院" align="center" />
+						<el-table-column prop="number" label="最大项目数量" align="center">
+							<template #default="{ row }">
+								<el-input-number
+									v-model="row.number"
+									@change="handleNumberChange(row)"
+								/>
+							</template>
+						</el-table-column>
+					</el-table>
 				</el-tab-pane>
 				<!-- 专家权重管理 -->
 				<el-tab-pane label="专家权重管理">
@@ -439,39 +496,33 @@ const updateExpertWeights = async () => {
 							/>
 						</el-form-item>
 						<el-form-item>
-							<el-button
-								type="primary"
-								@click="updateExpertWeights"
-								>保存设置</el-button
-							>
+							<el-button type="primary" @click="updateExpertWeights">
+								保存设置
+							</el-button>
 						</el-form-item>
 					</el-form>
 				</el-tab-pane>
 				<!-- 评审管理 -->
 				<el-tab-pane label="评审专家管理">
 					<div class="expert-management">
-						<el-table
-							:data="experts"
-							:min-height="tableHeight"
-							class="mt-20"
-						>
+						<el-table :data="experts" :min-height="tableHeight" class="mt-20">
 							<el-table-column prop="name" label="专家姓名" />
 							<el-table-column label="评审" width="120">
 								<template #default="scope">
 									<el-switch
 										:model-value="!scope.row.isCancel"
+										style="
+											--el-switch-off-color: #dcdfe6;
+											--el-switch-on-color: #13ce66;
+											--el-color-primary: #13ce66;
+										"
 										@update:model-value="
 											(val) => {
 												scope.row.isCancel = !val;
 												assignToExpertScore(scope.row);
 											}
 										"
-										style="
-											--el-switch-off-color: #dcdfe6;
-											--el-switch-on-color: #13ce66;
-											--el-color-primary: #13ce66;
-										"
-									></el-switch>
+									/>
 								</template>
 							</el-table-column>
 						</el-table>
@@ -491,10 +542,11 @@ const updateExpertWeights = async () => {
 				<el-tab-pane label="评审项目分配">
 					<el-button
 						type="primary"
-						@click="getScoreProject"
 						style="margin-bottom: 10px; margin-left: 20px"
-						>自动分配</el-button
+						@click="getScoreProject"
 					>
+						自动分配
+					</el-button>
 					<div class="expert-management">
 						<el-table
 							:data="reviewExperts"
@@ -512,7 +564,7 @@ const updateExpertWeights = async () => {
 										height: 100px;
 									"
 								>
-									<div v-for="(item, index) in reviewProject">
+									<div v-for="(item, index) in reviewProject" :key="item">
 										{{ index + 1 }} {{ item.projectName }}
 									</div>
 								</template>
@@ -520,7 +572,7 @@ const updateExpertWeights = async () => {
 						</el-table>
 					</div>
 				</el-tab-pane>
-				<el-tab-pane label="返回"> </el-tab-pane>
+				<el-tab-pane label="返回" />
 			</el-tabs>
 		</el-card>
 	</div>

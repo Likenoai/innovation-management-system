@@ -61,8 +61,7 @@ const routes = [
 			{
 				path: 'my-competitions',
 				name: 'MyCompetitions',
-				component: () =>
-					import('../views/competitions/MyCompetitions.vue'),
+				component: () => import('../views/competitions/MyCompetitions.vue'),
 				meta: {
 					requiresAuth: true,
 					permission: 'view_my_competitions',
@@ -78,8 +77,7 @@ const routes = [
 				// 学生上传项目
 				path: 'upload-innovation/:projectId?',
 				name: 'UploadInnovation',
-				component: () =>
-					import('../views/innovation/ProjectUpload.vue'),
+				component: () => import('../views/innovation/ProjectUpload.vue'),
 				// meta: {
 				// 	requiresAuth: true,
 				// 	permission: 'view_innovation_upload',
@@ -145,19 +143,6 @@ const routes = [
 					},
 				],
 			},
-
-			{
-				// 分配专家
-				path: 'assign-experts',
-				name: 'AssignExperts',
-				component: () =>
-					import('../views/innovation/assignExperts.vue'),
-				meta: {
-					requiresAuth: true,
-					permission: 'view_assign_experts',
-				},
-			},
-
 			// Project Library Module
 			{
 				path: 'project-library',

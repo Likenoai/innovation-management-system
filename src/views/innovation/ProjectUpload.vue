@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
 import { nanoid } from 'nanoid';
 import ProjectInfoForm from '@/components/innovation/ProjectInfoForm.vue';
 import ProjectMemberForm from '@/components/innovation/ProjectMemberForm.vue';
@@ -15,6 +15,7 @@ const myLoginStore = useMyLoginStore();
 let college = myLoginStore.userInfo.college;
 const route = useRoute(); // 获取路由实例
 const projectId = computed(() => route.params.projectId);
+console.log('projectId:', projectId);
 const formData = ref({
 	projectDetail: {
 		// 项目基础信息
@@ -126,6 +127,15 @@ let projectInfoFormRef = ref(null);
 const handleSubmit = async () => {
 	return await projectInfoFormRef.value.validateForm();
 };
+
+onUnmounted(() => {
+	formData.value = {
+		projectDetail: {},
+		projectMembers: [],
+		projectAdvisors: [],
+	};
+	console.log('ProjectUpload 组件已销毁');
+});
 </script>
 
 <template>

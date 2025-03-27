@@ -9,7 +9,6 @@ import { checkCollegeEndTime } from '@/utils/staticUtils.js';
 let isCanUpload = ref();
 onMounted(async () => {
 	isCanUpload.value = await checkCollegeEndTime();
-	console.log('isCanUpload.value :', isCanUpload.value);
 });
 const myLoginStore = useMyLoginStore();
 const { token } = storeToRefs(myLoginStore);

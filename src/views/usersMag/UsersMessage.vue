@@ -165,7 +165,7 @@ const getTeacherList = async () => {
 };
 
 const getStuColleges = async () => {
-	let res = await handleApiCall(staffApi.getStuCollegesApi);
+	const res = await handleApiCall(staffApi.getStuCollegesApi);
 	if (res.code === 200) {
 		categoryOptions.value = res.data;
 	}
@@ -221,7 +221,7 @@ const handleCurrentChange = (newPage, type) => {
 // 下载模板
 import { handleDownload } from '../utils';
 const getTemplate = async (type) => {
-	let res = await staffApi.getTemplateApi({ type });
+	const res = await staffApi.getTemplateApi({ type });
 	let name = '';
 	switch (type) {
 		case 0:
@@ -274,7 +274,7 @@ async function updatePassword() {
 		return;
 	}
 	try {
-		let id = loginStore.id;
+		const id = loginStore.id;
 		const response = await changeUserApi(id, {
 			password: form.value.oldPassword,
 			newPassword: form.value.newPassword,
@@ -417,7 +417,7 @@ const handleImport = async (file, typeName, typeValue, onSuccess) => {
 
 const resetPassword = debounce(async (row, type) => {
 	console.log('row:', row);
-	let res = await staffApi.resetPasswordApi({ id: row.id, type });
+	const res = await staffApi.resetPasswordApi({ id: row.id, type });
 	console.log(res);
 	if (res.code == 200) {
 		ElMessage.success(`${row.name}:重置密码成功`);
@@ -467,8 +467,8 @@ const handleOverflow = (row, isOverflow) => {
 <template>
 	<div class="users-manage-container">
 		<UserManageCard
-			:singlePageMode="singlePageMode"
 			v-permission="'view_expert_info'"
+			:single-page-mode="singlePageMode"
 			title="专家信息管理"
 			:visible="visibilityStates.expert.value"
 			@update:visible="(value) => (visibilityStates.expert.value = value)"
@@ -477,57 +477,57 @@ const handleOverflow = (row, isOverflow) => {
 				<div class="car-btn-box">
 					<el-button
 						type="primary"
-						@click="getTemplate(2)"
 						style="height: 42"
 						plain
-						>校内专家导入模板</el-button
+						@click="getTemplate(2)"
 					>
+						校内专家导入模板
+					</el-button>
 					<el-button
 						type="primary"
-						@click="getTemplate(3)"
 						style="height: 42"
 						plain
-						>院级专家导入模板</el-button
+						@click="getTemplate(3)"
 					>
+						院级专家导入模板
+					</el-button>
 					<el-upload
 						action="#"
 						:before-upload="
-							(file) =>
-								handleImport(file, '校内专家', 3, getExpertList)
+							(file) => handleImport(file, '校内专家', 3, getExpertList)
 						"
 						:show-file-list="true"
 						accept=".xlsx, .xls"
 					>
 						<el-button type="primary" plain>
-							<el-icon><Upload /></el-icon
-							>&nbsp;&nbsp;校内专家信息导入
+							<el-icon><Upload /></el-icon>
+							&nbsp;&nbsp;校内专家信息导入
 						</el-button>
 					</el-upload>
 					<el-upload
 						action="#"
 						:before-upload="
-							(file) =>
-								handleImport(file, '院级专家', 2, getExpertList)
+							(file) => handleImport(file, '院级专家', 2, getExpertList)
 						"
 						:show-file-list="true"
 						accept=".xlsx, .xls"
 					>
 						<el-button type="primary" plain>
-							<el-icon><Upload /></el-icon
-							>&nbsp;&nbsp;院级专家信息导入
+							<el-icon><Upload /></el-icon>
+							&nbsp;&nbsp;院级专家信息导入
 						</el-button>
 					</el-upload>
 				</div>
 			</template>
 			<template #table>
 				<el-table
+					v-loading="dialogVisibleExpert"
 					:data="expertList"
 					border
 					stripe
 					:height="tableHeightRef"
 					align="center"
 					header-align="center"
-					v-loading="dialogVisibleExpert"
 				>
 					<el-table-column
 						label="序号"
@@ -581,8 +581,8 @@ const handleOverflow = (row, isOverflow) => {
 							<el-button
 								type="primary"
 								size="small"
-								@click="resetPassword(scope.row, 2)"
 								text
+								@click="resetPassword(scope.row, 2)"
 							>
 								重置密码
 							</el-button>
@@ -604,24 +604,22 @@ const handleOverflow = (row, isOverflow) => {
 
 		<!-- 学院管理员信息管理 -->
 		<UserManageCard
-			:singlePageMode="singlePageMode"
 			v-permission="'view_college_admin_info'"
+			:single-page-mode="singlePageMode"
 			title="学院管理员信息管理"
 			:visible="visibilityStates.collegeAdmin.value"
-			@update:visible="
-				(value) => (visibilityStates.collegeAdmin.value = value)
-			"
+			@update:visible="(value) => (visibilityStates.collegeAdmin.value = value)"
 		>
-			<template #actions> </template>
+			<template #actions></template>
 			<template #table>
 				<el-table
+					v-loading="dialogVisibleManager"
 					:data="managerList"
 					border
 					stripe
 					:height="tableHeightRef"
 					align="center"
 					header-align="center"
-					v-loading="dialogVisibleManager"
 				>
 					<el-table-column
 						label="序号"
@@ -657,8 +655,8 @@ const handleOverflow = (row, isOverflow) => {
 							<el-button
 								type="primary"
 								size="small"
-								@click="resetPassword(scope.row, 2)"
 								text
+								@click="resetPassword(scope.row, 2)"
 							>
 								重置密码
 							</el-button>
@@ -679,35 +677,33 @@ const handleOverflow = (row, isOverflow) => {
 		</UserManageCard>
 		<!-- 教师信息管理 -->
 		<UserManageCard
-			:singlePageMode="singlePageMode"
 			v-permission="'view_teacher_info'"
+			:single-page-mode="singlePageMode"
 			title="教师信息管理"
 			:visible="visibilityStates.teacher.value"
-			@update:visible="
-				(value) => (visibilityStates.teacher.value = value)
-			"
+			@update:visible="(value) => (visibilityStates.teacher.value = value)"
 		>
 			<template #actions>
 				<div class="car-btn-box">
 					<el-button
 						type="primary"
-						@click="getTemplate(1)"
 						style="height: 42"
 						plain
-						>教师导入模板</el-button
+						@click="getTemplate(1)"
 					>
+						教师导入模板
+					</el-button>
 					<el-upload
 						action="#"
 						:before-upload="
-							(file) =>
-								handleImport(file, '教师', 1, getTeacherList)
+							(file) => handleImport(file, '教师', 1, getTeacherList)
 						"
 						:show-file-list="true"
 						accept=".xlsx, .xls"
 					>
 						<el-button type="primary" plain>
-							<el-icon><Upload /></el-icon
-							>&nbsp;&nbsp;教师信息导入
+							<el-icon><Upload /></el-icon>
+							&nbsp;&nbsp;教师信息导入
 						</el-button>
 					</el-upload>
 					<div class="search-container">
@@ -717,44 +713,42 @@ const handleOverflow = (row, isOverflow) => {
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 						<el-input
 							v-model="teacherListParams.name"
 							placeholder="请输入姓名"
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 						<el-input
 							v-model="teacherListParams.currentUnit"
 							placeholder="请输入当前单位"
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 
 						<el-button
 							type="primary"
-							@click="handelTeacherSelect"
 							style="height: 42"
 							plain
-							>搜索</el-button
+							@click="handelTeacherSelect"
 						>
+							搜索
+						</el-button>
 					</div>
 				</div>
 			</template>
 			<template #table>
 				<el-table
+					v-loading="dialogVisibleTeacher"
 					:data="teacherList"
 					border
 					stripe
 					:height="tableHeightRef"
 					align="center"
 					header-align="center"
-					v-loading="dialogVisibleTeacher"
 				>
 					<el-table-column
 						label="序号"
@@ -793,11 +787,8 @@ const handleOverflow = (row, isOverflow) => {
 								>
 									<div class="project-info">
 										<div
+											v-height-overflow="(val) => handleOverflow(row, val)"
 											class="project-name"
-											v-height-overflow="
-												(val) =>
-													handleOverflow(row, val)
-											"
 										>
 											{{ row.currentUnit }}
 										</div>
@@ -805,8 +796,8 @@ const handleOverflow = (row, isOverflow) => {
 									</div>
 								</el-tooltip>
 							</div>
-						</template></el-table-column
-					>
+						</template>
+					</el-table-column>
 					<el-table-column
 						prop="professionalTitle"
 						label="职称"
@@ -871,11 +862,7 @@ const handleOverflow = (row, isOverflow) => {
 										: { color: '#f89898' }
 								"
 							>
-								{{
-									scope.row.registerFlag == 1
-										? '已注册'
-										: '未注册'
-								}}
+								{{ scope.row.registerFlag == 1 ? '已注册' : '未注册' }}
 							</span>
 						</template>
 					</el-table-column>
@@ -890,8 +877,8 @@ const handleOverflow = (row, isOverflow) => {
 							<el-button
 								type="primary"
 								size="small"
-								@click="resetPassword(scope.row, 1)"
 								text
+								@click="resetPassword(scope.row, 1)"
 							>
 								重置密码
 							</el-button>
@@ -912,35 +899,33 @@ const handleOverflow = (row, isOverflow) => {
 		</UserManageCard>
 		<!-- 学生信息管理 -->
 		<UserManageCard
-			:singlePageMode="singlePageMode"
 			v-permission="'view_student_info'"
+			:single-page-mode="singlePageMode"
 			title="学生信息管理"
 			:visible="visibilityStates.student.value"
-			@update:visible="
-				(value) => (visibilityStates.student.value = value)
-			"
+			@update:visible="(value) => (visibilityStates.student.value = value)"
 		>
 			<template #actions>
 				<div class="car-btn-box">
 					<el-button
 						type="primary"
-						@click="getTemplate(0)"
 						style="height: 42"
 						plain
-						>学生导入模板</el-button
+						@click="getTemplate(0)"
 					>
+						学生导入模板
+					</el-button>
 					<el-upload
 						action="#"
 						:before-upload="
-							(file) =>
-								handleImport(file, '学生', 0, getStudentList)
+							(file) => handleImport(file, '学生', 0, getStudentList)
 						"
 						:show-file-list="true"
 						accept=".xlsx, .xls"
 					>
 						<el-button type="primary" plain>
-							<el-icon><Upload /></el-icon
-							>&nbsp;&nbsp;学生信息导入
+							<el-icon><Upload /></el-icon>
+							&nbsp;&nbsp;学生信息导入
 						</el-button>
 					</el-upload>
 					<div class="search-container">
@@ -950,16 +935,14 @@ const handleOverflow = (row, isOverflow) => {
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 						<el-input
 							v-model="studentListParams.studentId"
 							placeholder="请输入学号"
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 						<el-select
 							v-model="studentListParams.college"
 							placeholder="请选择学院"
@@ -970,7 +953,7 @@ const handleOverflow = (row, isOverflow) => {
 								v-for="item in categoryOptions"
 								:label="item"
 								:value="item"
-							></el-option>
+							/>
 						</el-select>
 						<el-input
 							v-model="studentListParams.majorName"
@@ -978,36 +961,35 @@ const handleOverflow = (row, isOverflow) => {
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 						<el-input
 							v-model="studentListParams.grade"
 							placeholder="请输入年级"
 							clearable
 							class="input-item"
 							style="padding-bottom: 10px"
-						>
-						</el-input>
+						/>
 
 						<el-button
 							type="primary"
-							@click="handelStudentSelect"
 							style="height: 42"
 							plain
-							>搜索</el-button
+							@click="handelStudentSelect"
 						>
+							搜索
+						</el-button>
 					</div>
 				</div>
 			</template>
 			<template #table>
 				<el-table
+					v-loading="dialogVisibleStudent"
 					:data="studentList"
 					border
 					stripe
 					:height="tableHeightRef"
 					align="center"
 					header-align="center"
-					v-loading="dialogVisibleStudent"
 					table-layout="auto"
 				>
 					<el-table-column
@@ -1042,16 +1024,8 @@ const handleOverflow = (row, isOverflow) => {
 						</template>
 					</el-table-column>
 					<el-table-column prop="grade" label="年级" width="100" />
-					<el-table-column
-						prop="educationLevel"
-						label="学历"
-						width="120"
-					/>
-					<el-table-column
-						prop="registerFlag"
-						label="是否注册"
-						fixed="right"
-					>
+					<el-table-column prop="educationLevel" label="学历" width="120" />
+					<el-table-column prop="registerFlag" label="是否注册" fixed="right">
 						<template #default="scope">
 							<span
 								:style="
@@ -1060,11 +1034,7 @@ const handleOverflow = (row, isOverflow) => {
 										: { color: '#f89898' }
 								"
 							>
-								{{
-									scope.row.registerFlag == 1
-										? '已注册'
-										: '未注册'
-								}}
+								{{ scope.row.registerFlag == 1 ? '已注册' : '未注册' }}
 							</span>
 						</template>
 					</el-table-column>
@@ -1073,8 +1043,8 @@ const handleOverflow = (row, isOverflow) => {
 							<el-button
 								type="primary"
 								size="small"
-								@click="resetPassword(scope.row, 0)"
 								text
+								@click="resetPassword(scope.row, 0)"
 							>
 								重置密码
 							</el-button>
@@ -1095,8 +1065,8 @@ const handleOverflow = (row, isOverflow) => {
 		</UserManageCard>
 
 		<UserManageCard
-			:singlePageMode="singlePageMode"
 			v-permission="'view_self_info'"
+			:single-page-mode="singlePageMode"
 			title="当前用户密码管理"
 			:visible="visibilityStates.self.value"
 			@update:visible="(value) => (visibilityStates.self.value = value)"
@@ -1135,9 +1105,9 @@ const handleOverflow = (row, isOverflow) => {
 						/>
 					</el-form-item>
 					<el-form-item>
-						<el-button type="primary" @click="updatePassword"
-							>修改密码</el-button
-						>
+						<el-button type="primary" @click="updatePassword">
+							修改密码
+						</el-button>
 					</el-form-item>
 				</el-form>
 			</template>
@@ -1147,7 +1117,6 @@ const handleOverflow = (row, isOverflow) => {
 				v-for="button in filteredButtonTypes"
 				:key="button.type"
 				:type="visibilityStates[button.type].value ? 'success' : 'info'"
-				@click="toggleVisibility(button.type)"
 				round
 				style="margin: 0"
 				:class="
@@ -1155,14 +1124,15 @@ const handleOverflow = (row, isOverflow) => {
 						? 'el-button--primary'
 						: 'el-button--plain'
 				"
+				@click="toggleVisibility(button.type)"
 			>
 				{{ button.label }}
 			</el-button>
 			<el-button
 				:type="singlePageMode ? 'primary' : 'info'"
-				@click="toggleSinglePageMode"
 				round
 				style="margin: 0"
+				@click="toggleSinglePageMode"
 			>
 				单页面模式
 			</el-button>

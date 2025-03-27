@@ -5,16 +5,30 @@ import { ElMessage } from 'element-plus';
 export const withErrorHandling = (asyncFunc, baseConfig = {}) => {
 	return async function (params, runtimeConfig = {}) {
 		// 合并配置（运行时配置优先级更高）
-		const config = { ...baseConfig, ...runtimeConfig };
+		const config = {
+			display: true,
+			...baseConfig,
+			...runtimeConfig,
+		};
 		try {
 			const response = await asyncFunc(params);
-			if (config.successMsg) {
-				ElMessage.success({
-					message: config.successMsg,
-					duration: 1500,
-				});
+			if (config.display) {
+				if (config.successMsg) {
+					ElMessage.success({
+						message: config.successMsg,
+						duration: 1500,
+					});
+				}
+				if (response.code !== 200) {
+					ElMessage.error({
+						message: config.errorMsg || '操作失败，请稍后重试',
+						duration: 3000,
+					});
+				}
+				return config.transformResponse?.(response) ?? response;
+			} else {
+				return config.transformResponse?.(response) ?? response;
 			}
-			return config.transformResponse?.(response) ?? response;
 		} catch (error) {
 			ElMessage.error({
 				message: config.errorMsg || '操作失败，请稍后重试',

@@ -58,11 +58,6 @@ export const menuConfig = [
 				title: '专家评审',
 				permission: 'view_expert_review',
 			},
-			{
-				path: '/assign-experts',
-				title: '分配专家',
-				permission: 'view_assign_experts',
-			},
 		],
 	},
 	{
